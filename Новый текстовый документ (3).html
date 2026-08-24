@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Ассоциации</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --bg: #f5f5f5; --surface: #ffffff; --primary: #2481cc; --primary-dark: #1a6cb3;
+            --text: #000000; --text-secondary: #707579; --border: #dfe1e5;
+            --error: #e74c3c; --success: #2ecc71; --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden;
+        }
+        .container { max-width: 480px; margin: 0 auto; padding: 16px; min-height: 100vh; }
+        .header { text-align: center; margin-bottom: 20px; padding-top: 8px; }
+        .header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+        .header p { color: var(--text-secondary); font-size: 14px; }
+        .counter {
+            display: inline-block; background: var(--primary); color: white;
+            padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-top: 8px;
+        }
+        .counter.ready { background: var(--success); }
+        .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+        .photo-card {
+            background: var(--surface); border-radius: 16px; overflow: hidden;
+            box-shadow: var(--shadow); position: relative; animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .photo-card img { width: 100%; height: 130px; object-fit: cover; display: block; }
+        .photo-card .word-input {
+            width: 100%; border: none; padding: 10px; font-size: 14px;
+            text-align: center; font-weight: 600; outline: none; background: transparent;
+        }
+        .photo-card .word-input::placeholder { color: #bbb; }
+        .photo-card .delete-btn {
+            position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.5);
+            color: white; border: none; width: 28px; height: 28px; border-radius: 50%;
+            cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+        }
+        .add-btn {
+            width: 100%; height: 130px; border: 2px dashed var(--border); border-radius: 16px;
+            background: var(--surface); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; cursor: pointer;
+            transition: all 0.2s; color: var(--text-secondary); margin-bottom: 12px;
+        }
+        .add-btn:active { transform: scale(0.96); border-color: var(--primary); color: var(--primary); }
+        .add-btn .icon { font-size: 32px; margin-bottom: 4px; }
+        .add-btn .label { font-size: 13px; font-weight: 500; }
+        .start-btn {
+            width: 100%; padding: 16px; background: var(--primary); color: white; border: none;
+            border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(36, 129, 204, 0.3); transition: all 0.2s; margin-bottom: 10px;
+        }
+        .start-btn:disabled { background: #b0b0b0; box-shadow: none; cursor: not-allowed; }
+        .start-btn:not(:disabled):active { transform: scale(0.98); background: var(--primary-dark); }
+        .reset-btn {
+            width: 100%; padding: 12px; background: transparent; color: var(--text-secondary);
+            border: 1px solid var(--border); border-radius: 14px; font-size: 14px;
+            font-weight: 600; cursor: pointer; margin-bottom: 20px;
+        }
+        .reset-btn:active { background: rgba(0,0,0,0.03); }
+        .game-screen { display: none; }
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-top: 8px; }
+        .game-header h2 { font-size: 20px; }
+        .round-badge { background: var(--primary); color: white; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 700; }
+        .progress-bar { display: flex; gap: 6px; margin-bottom: 16px; justify-content: center; }
+        .progress-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+        .progress-dot.active { background: var(--primary); transform: scale(1.2); }
+        .progress-dot.done { background: var(--success); }
+        .hint { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 14px; min-height: 20px; }
+        .game-photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+        .game-photo {
+            background: var(--surface); border-radius: 16px; overflow: hidden;
+            box-shadow: var(--shadow); cursor: pointer; transition: all 0.2s;
+            border: 3px solid transparent; position: relative;
+        }
+        .game-photo img { width: 100%; height: 120px; object-fit: cover; display: block; pointer-events: none; }
+        .game-photo.selected { border-color: var(--primary); transform: scale(1.02); box-shadow: 0 4px 16px rgba(36, 129, 204, 0.3); }
+        .game-photo.correct { border-color: var(--success); }
+        .game-photo.wrong { border-color: var(--error); animation: shake 0.4s; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        .words-title { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 10px; font-weight: 500; }
+        .words-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .word-btn {
+            background: var(--surface); border: 2px solid var(--border); border-radius: 12px;
+            padding: 14px; font-size: 15px; font-weight: 600; cursor: pointer;
+            transition: all 0.15s; text-align: center; color: var(--text);
+        }
+        .word-btn:active { transform: scale(0.96); }
+        .word-btn.selected { border-color: var(--primary); background: rgba(36, 129, 204, 0.08); color: var(--primary); }
+        .word-btn.correct { border-color: var(--success); background: rgba(46, 204, 113, 0.1); color: var(--success); }
+        .word-btn.wrong { border-color: var(--error); background: rgba(231, 76, 60, 0.1); color: var(--error); }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
+            z-index: 1000; padding: 20px; backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.2s; }
+        .modal {
+            background: var(--surface); border-radius: 24px; padding: 32px 24px;
+            text-align: center; max-width: 320px; width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-icon { font-size: 56px; margin-bottom: 12px; }
+        .modal h3 { font-size: 22px; margin-bottom: 8px; }
+        .modal p { color: var(--text-secondary); font-size: 15px; margin-bottom: 20px; line-height: 1.4; }
+        .modal-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .modal-btn:active { transform: scale(0.98); }
+        .modal-btn.primary { background: var(--primary); color: white; }
+        .modal-btn.danger { background: var(--error); color: white; }
+        .modal-btn.success { background: var(--success); color: white; }
+        #fileInput { display: none; }
+        .saved-badge {
+            text-align: center; font-size: 12px; color: var(--success);
+            margin-bottom: 10px; font-weight: 600;
+        }
+        @media (max-width: 360px) {
+            .photo-card img, .add-btn { height: 110px; }
+            .game-photo img { height: 100px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- SETUP SCREEN -->
+        <div id="setupScreen">
+            <div class="header">
+                <h1>🧠 Ассоциации</h1>
+                <p>Загрузи фото и придумай к ним слова</p>
+                <div class="saved-badge" id="savedBadge" style="display:none;">✅ Данные сохранены в телефоне</div>
+                <div class="counter" id="counter">Добавлено: 0/4</div>
+            </div>
+
+            <div class="photo-grid" id="photoGrid"></div>
+
+            <div class="add-btn" id="addBtn">
+                <div class="icon">➕</div>
+                <div class="label">Добавить фото</div>
+            </div>
+
+            <input type="file" id="fileInput" accept="image/*" multiple>
+
+            <button class="start-btn" id="startBtn" disabled>▶️ Начать игру</button>
+            <button class="reset-btn" id="resetBtn" style="display:none;">🗑 Очистить всё</button>
+        </div>
+
+        <!-- GAME SCREEN -->
+        <div class="game-screen" id="gameScreen">
+            <div class="game-header">
+                <h2>Найди пару</h2>
+                <div class="round-badge" id="roundBadge">Раунд 1/5</div>
+            </div>
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-dot active"></div><div class="progress-dot"></div>
+                <div class="progress-dot"></div><div class="progress-dot"></div><div class="progress-dot"></div>
+            </div>
+            <div class="hint" id="hint">Выбери фото, затем подходящее слово</div>
+            <div class="game-photos" id="gamePhotos"></div>
+            <div class="words-title">Слова:</div>
+            <div class="words-grid" id="wordsGrid"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modal">
+            <div class="modal-icon" id="modalIcon">❌</div>
+            <h3 id="modalTitle">Ошибка!</h3>
+            <p id="modalText">Неправильная пара. Начинаем заново.</p>
+            <button class="modal-btn danger" id="modalBtn">Заново</button>
+        </div>
+    </div>
+
+    <script>
+        // ====== TELEGRAM WEBAPP ======
+        const tg = window.Telegram.WebApp;
+        tg.ready(); tg.expand();
+
+        // ====== INDEXEDDB ======
+        const DB_NAME = 'AssociationsGame';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'photos';
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onerror = () => reject(req.error);
+                req.onsuccess = () => resolve(req.result);
+                req.onupgradeneeded = (e) => {
+                    e.target.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                };
+            });
+        }
+
+        async function savePhotosToDB(photos) {
+            const db = await openDB();
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            await store.clear();
+            for (const photo of photos) {
+                await store.put(photo);
+            }
+            showSavedBadge();
+        }
+
+        async function loadPhotosFromDB() {
+            const db = await openDB();
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            return new Promise((resolve, reject) => {
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function clearDB() {
+            const db = await openDB();
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            await tx.objectStore(STORE_NAME).clear();
+        }
+
+        function showSavedBadge() {
+            const badge = document.getElementById('savedBadge');
+            badge.style.display = 'block';
+            setTimeout(() => badge.style.display = 'none', 2000);
+        }
+
+        // ====== STATE ======
+        let photos = [];
+        let saveTimeout = null;
+        let gameState = { round: 1, selectedPhoto: null, selectedWord: null, currentRoundData: null, isProcessing: false };
+
+        // ====== DOM ======
+        const setupScreen = document.getElementById('setupScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const photoGrid = document.getElementById('photoGrid');
+        const addBtn = document.getElementById('addBtn');
+        const fileInput = document.getElementById('fileInput');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const counter = document.getElementById('counter');
+        const gamePhotos = document.getElementById('gamePhotos');
+        const wordsGrid = document.getElementById('wordsGrid');
+        const roundBadge = document.getElementById('roundBadge');
+        const progressBar = document.getElementById('progressBar');
+        const hint = document.getElementById('hint');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalText = document.getElementById('modalText');
+        const modalBtn = document.getElementById('modalBtn');
+
+        // ====== SETUP ======
+        addBtn.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            let loaded = 0;
+            files.forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    photos.push({ id: Date.now() + Math.random(), dataUrl: ev.target.result, word: '' });
+                    loaded++;
+                    if (loaded === files.filter(f => f.type.startsWith('image/')).length) {
+                        renderSetup();
+                        scheduleSave();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+            fileInput.value = '';
+        });
+
+        function scheduleSave() {
+            if (saveTimeout) clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => savePhotosToDB(photos), 500);
+        }
+
+        function renderSetup() {
+            photoGrid.innerHTML = '';
+            photos.forEach((photo, index) => {
+                const card = document.createElement('div');
+                card.className = 'photo-card';
+                card.innerHTML = `
+                    <img src="${photo.dataUrl}" alt="Photo">
+                    <input type="text" class="word-input" placeholder="Введи слово..." 
+                           value="${escapeHtml(photo.word)}" data-index="${index}">
+                    <button class="delete-btn" data-index="${index}">×</button>
+                `;
+                photoGrid.appendChild(card);
+            });
+
+            document.querySelectorAll('.word-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const idx = parseInt(e.target.dataset.index);
+                    photos[idx].word = e.target.value.trim();
+                    checkReady();
+                    scheduleSave();
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const idx = parseInt(e.target.dataset.index);
+                    photos.splice(idx, 1);
+                    renderSetup();
+                    checkReady();
+                    scheduleSave();
+                });
+            });
+
+            counter.textContent = `Добавлено: ${photos.length}/4`;
+            counter.classList.toggle('ready', photos.length >= 4);
+            checkReady();
+        }
+
+        function checkReady() {
+            const hasMinPhotos = photos.length >= 4;
+            const allHaveWords = photos.every(p => p.word.length > 0);
+            startBtn.disabled = !(hasMinPhotos && allHaveWords);
+            resetBtn.style.display = photos.length > 0 ? 'block' : 'none';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        resetBtn.addEventListener('click', async () => {
+            if (!confirm('Удалить все фото и слова?')) return;
+            photos = [];
+            await clearDB();
+            renderSetup();
+        });
+
+        // ====== LOAD ON START ======
+        async function init() {
+            const saved = await loadPhotosFromDB();
+            if (saved && saved.length > 0) {
+                photos = saved;
+                renderSetup();
+            }
+        }
+
+        // ====== GAME ======
+        startBtn.addEventListener('click', startGame);
+
+        function startGame() {
+            if (photos.length < 4) return;
+            gameState.round = 1;
+            gameState.isProcessing = false;
+            setupScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            startRound();
+        }
+
+        function startRound() {
+            gameState.selectedPhoto = null;
+            gameState.selectedWord = null;
+            gameState.isProcessing = false;
+            roundBadge.textContent = `Раунд ${gameState.round}/5`;
+            updateProgress();
+            hint.textContent = 'Выбери фото, затем подходящее слово';
+            hint.style.color = 'var(--text-secondary)';
+
+            const shuffled = [...photos].sort(() => Math.random() - 0.5);
+            const roundPhotos = shuffled.slice(0, 4);
+            const targetIndex = Math.floor(Math.random() * 4);
+            const targetPhoto = roundPhotos[targetIndex];
+            const correctWord = targetPhoto.word;
+
+            const otherPhotos = photos.filter(p => p.id !== targetPhoto.id);
+            const wrongWords = [];
+            while (wrongWords.length < 3 && otherPhotos.length > 0) {
+                const rand = otherPhotos[Math.floor(Math.random() * otherPhotos.length)];
+                if (!wrongWords.includes(rand.word) && rand.word !== correctWord) {
+                    wrongWords.push(rand.word);
+                }
+            }
+            while (wrongWords.length < 3) wrongWords.push('???');
+            const words = [correctWord, ...wrongWords].sort(() => Math.random() - 0.5);
+
+            gameState.currentRoundData = {
+                photos: roundPhotos,
+                targetPhoto: targetPhoto,
+                correctWord: correctWord,
+                words: words
+            };
+            renderRound();
+        }
+
+        function renderRound() {
+            const data = gameState.currentRoundData;
+            gamePhotos.innerHTML = '';
+            data.photos.forEach((photo, idx) => {
+                const div = document.createElement('div');
+                div.className = 'game-photo';
+                div.dataset.index = idx;
+                div.innerHTML = `<img src="${photo.dataUrl}" alt="">`;
+                div.addEventListener('click', () => selectPhoto(idx));
+                gamePhotos.appendChild(div);
+            });
+
+            wordsGrid.innerHTML = '';
+            data.words.forEach((word, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'word-btn';
+                btn.textContent = word;
+                btn.dataset.word = word;
+                btn.addEventListener('click', () => selectWord(word));
+                wordsGrid.appendChild(btn);
+            });
+        }
+
+        function selectPhoto(index) {
+            if (gameState.isProcessing) return;
+            gameState.selectedPhoto = index;
+            document.querySelectorAll('.game-photo').forEach((el, i) => {
+                el.classList.toggle('selected', i === index);
+            });
+            checkPair();
+        }
+
+        function selectWord(word) {
+            if (gameState.isProcessing) return;
+            gameState.selectedWord = word;
+            document.querySelectorAll('.word-btn').forEach(el => {
+                el.classList.toggle('selected', el.dataset.word === word);
+            });
+            checkPair();
+        }
+
+        function checkPair() {
+            if (gameState.selectedPhoto === null || gameState.selectedWord === null) return;
+            const data = gameState.currentRoundData;
+            const selectedPhotoObj = data.photos[gameState.selectedPhoto];
+            const isCorrect = selectedPhotoObj.id === data.targetPhoto.id && gameState.selectedWord === data.correctWord;
+            gameState.isProcessing = true;
+
+            const photoEl = document.querySelectorAll('.game-photo')[gameState.selectedPhoto];
+            const wordEl = Array.from(document.querySelectorAll('.word-btn')).find(el => el.dataset.word === gameState.selectedWord);
+
+            if (isCorrect) {
+                photoEl.classList.add('correct');
+                wordEl.classList.add('correct');
+                hint.textContent = '✅ Правильно!';
+                hint.style.color = 'var(--success)';
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                setTimeout(() => {
+                    if (gameState.round >= 5) showWin();
+                    else { gameState.round++; startRound(); }
+                }, 800);
+            } else {
+                photoEl.classList.add('wrong');
+                wordEl.classList.add('wrong');
+                hint.textContent = '❌ Неправильно!';
+                hint.style.color = 'var(--error)';
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                setTimeout(() => showGameOver(), 600);
+            }
+        }
+
+        function updateProgress() {
+            document.querySelectorAll('.progress-dot').forEach((dot, i) => {
+                dot.classList.remove('active', 'done');
+                if (i < gameState.round - 1) dot.classList.add('done');
+                else if (i === gameState.round - 1) dot.classList.add('active');
+            });
+        }
+
+        function showGameOver() {
+            modalIcon.textContent = '❌';
+            modalTitle.textContent = 'Ошибка!';
+            modalText.textContent = 'Неправильная пара. Все достижения сброшены.';
+            modalBtn.textContent = 'Начать заново';
+            modalBtn.className = 'modal-btn danger';
+            modalBtn.onclick = () => { hideModal(); backToSetup(); };
+            modalOverlay.classList.add('active');
+        }
+
+        function showWin() {
+            modalIcon.textContent = '🎉';
+            modalTitle.textContent = 'Победа!';
+            modalText.textContent = 'Ты прошёл все 5 раундов! Отличная память!';
+            modalBtn.textContent = 'Играть снова';
+            modalBtn.className = 'modal-btn success';
+            modalBtn.onclick = () => { hideModal(); backToSetup(); };
+            modalOverlay.classList.add('active');
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        function hideModal() { modalOverlay.classList.remove('active'); }
+        function backToSetup() {
+            gameScreen.style.display = 'none';
+            setupScreen.style.display = 'block';
+        }
+
+        modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) hideModal(); });
+
+        // Init
+        init();
+    </script>
+</body>
+</html>
