@@ -6,241 +6,123 @@
     <title>Ассоциации</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        :root {
-            --bg: #f5f5f5; --surface: #ffffff; --primary: #2481cc; --primary-dark: #1a6cb3;
-            --text: #000000; --text-secondary: #707579; --border: #dfe1e5;
-            --error: #e74c3c; --success: #2ecc71; --warning: #f39c12;
-            --shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden;
-        }
-        .container { max-width: 480px; margin: 0 auto; padding: 16px; min-height: 100vh; position: relative; }
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        :root{--bg:#f5f5f5;--surface:#fff;--primary:#2481cc;--primary-dark:#1a6cb3;--text:#000;--text-secondary:#707579;--border:#dfe1e5;--error:#e74c3c;--success:#2ecc71;--warning:#f39c12;--shadow:0 2px 8px rgba(0,0,0,.08)}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+        .container{max-width:480px;margin:0 auto;padding:16px;min-height:100vh;position:relative}
 
-        .header { text-align: center; margin-bottom: 16px; padding-top: 8px; position: relative; }
-        .header h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
-        .header p { color: var(--text-secondary); font-size: 13px; }
-        .streak-badge {
-            position: absolute; top: 0; right: 0;
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            color: white; padding: 4px 10px; border-radius: 20px;
-            font-size: 12px; font-weight: 700; box-shadow: 0 2px 6px rgba(238,90,36,0.3);
-            display: none;
-        }
-        .streak-badge.active { display: block; }
+        .header{text-align:center;margin-bottom:16px;padding-top:8px;position:relative}
+        .header h1{font-size:24px;font-weight:800;margin-bottom:4px}
+        .header p{color:var(--text-secondary);font-size:13px}
+        .streak-badge{position:absolute;top:0;right:0;background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 2px 6px rgba(238,90,36,.3);display:none}
+        .streak-badge.active{display:block}
+        .version{position:absolute;bottom:-4px;right:0;font-size:11px;color:var(--text-secondary);font-weight:600;opacity:.7}
 
-        .nav-tabs {
-            display: flex; gap: 8px; margin-bottom: 16px;
-            background: var(--surface); padding: 4px;
-            border-radius: 14px; box-shadow: var(--shadow);
-        }
-        .nav-tab {
-            flex: 1; padding: 10px; border: none; border-radius: 10px;
-            background: transparent; color: var(--text-secondary);
-            font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;
-        }
-        .nav-tab.active { background: var(--primary); color: white; }
+        .nav-tabs{display:flex;gap:8px;margin-bottom:16px;background:var(--surface);padding:4px;border-radius:14px;box-shadow:var(--shadow)}
+        .nav-tab{flex:1;padding:10px;border:none;border-radius:10px;background:transparent;color:var(--text-secondary);font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+        .nav-tab.active{background:var(--primary);color:#fff}
 
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+        .tab-content{display:none;animation:fadeIn .3s ease}
+        .tab-content.active{display:block}
+        @keyframes fadeIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
 
-        /* PHOTO GRID — fixed card layout */
-        .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px; }
-        .photo-card {
-            background: var(--surface); border-radius: 16px; overflow: hidden;
-            box-shadow: var(--shadow); position: relative; animation: fadeIn 0.3s ease;
-            display: flex; flex-direction: column;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .photo-card .img-wrap {
-            width: 100%; min-height: 140px; background: #f0f0f0;
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
-        }
-        .photo-card .img-wrap img {
-            max-width: 100%; max-height: 220px; width: auto; height: auto;
-            display: block; object-fit: contain;
-        }
-        .photo-card .inputs-wrap {
-            padding: 10px; display: flex; flex-direction: column; gap: 6px;
-        }
-        .photo-card .word-input {
-            width: 100%; border: 1px solid transparent; border-radius: 8px;
-            padding: 8px 6px; font-size: 14px;
-            text-align: center; font-weight: 600; outline: none; background: var(--bg);
-            color: var(--text); word-break: break-word; line-height: 1.3;
-        }
-        .photo-card .word-input:focus { border-color: var(--primary); background: var(--surface); }
-        .photo-card .word-input::placeholder { color: #bbb; font-weight: 500; }
-        .photo-card .word-input.prefix-input {
-            font-size: 13px; color: var(--primary); background: rgba(36,129,204,0.06);
-        }
-        .photo-card .delete-btn {
-            position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.55);
-            color: white; border: none; width: 28px; height: 28px; border-radius: 50%;
-            cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
-            z-index: 2;
-        }
+        .photo-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:16px}
+        .photo-card{background:var(--surface);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);position:relative;animation:fadeIn .3s ease;display:flex;flex-direction:column}
+        .photo-card .img-wrap{width:100%;aspect-ratio:3/4;max-height:220px;background:#f0f0f0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+        .photo-card .img-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+        .photo-card .delete-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;z-index:2}
 
-        .add-btn {
-            width: 100%; padding: 14px 20px; border: 2px solid var(--primary); border-radius: 14px;
-            background: rgba(36, 129, 204, 0.08); display: flex; flex-direction: row;
-            align-items: center; justify-content: center; cursor: pointer;
-            transition: all 0.2s; color: var(--primary); gap: 8px;
-            font-size: 15px; font-weight: 700; margin-bottom: 16px;
-        }
-        .add-btn:active { transform: scale(0.98); background: var(--primary); color: white; }
-        .add-btn .icon { font-size: 20px; }
+        .input-group{display:flex;margin:10px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--bg)}
+        .input-group input{flex:1;border:none;padding:10px 8px;font-size:14px;font-weight:600;text-align:center;outline:none;background:transparent;color:var(--text)}
+        .input-group input:first-child{border-right:1px solid var(--border)}
+        .input-group input:last-child{color:var(--primary);background:rgba(36,129,204,.06);flex:0 0 48px;font-weight:700}
 
-        .start-btn {
-            width: 100%; padding: 16px; background: var(--primary); color: white; border: none;
-            border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(36, 129, 204, 0.3); transition: all 0.2s; margin-bottom: 10px;
-        }
-        .start-btn:disabled { background: #b0b0b0; box-shadow: none; cursor: not-allowed; }
-        .start-btn:not(:disabled):active { transform: scale(0.98); background: var(--primary-dark); }
+        .add-btn{width:100%;padding:14px 20px;border:2px solid var(--primary);border-radius:14px;background:rgba(36,129,204,.08);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;color:var(--primary);gap:8px;font-size:15px;font-weight:700;margin-bottom:16px}
+        .add-btn:active{transform:scale(.98);background:var(--primary);color:#fff}
+        .add-btn .icon{font-size:20px}
 
-        .reset-btn {
-            width: 100%; padding: 12px; background: transparent; color: var(--text-secondary);
-            border: 1px solid var(--border); border-radius: 14px; font-size: 14px;
-            font-weight: 600; cursor: pointer;
-        }
-        .reset-btn:active { background: rgba(0,0,0,0.03); }
+        .start-btn{width:100%;padding:16px;background:var(--primary);color:#fff;border:none;border-radius:14px;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 12px rgba(36,129,204,.3);transition:all .2s;margin-bottom:10px}
+        .start-btn:disabled{background:#b0b0b0;box-shadow:none;cursor:not-allowed}
+        .start-btn:not(:disabled):active{transform:scale(.98);background:var(--primary-dark)}
 
-        .counter {
-            display: inline-block; background: var(--primary); color: white;
-            padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 12px;
-        }
-        .counter.ready { background: var(--success); }
+        .reset-btn{width:100%;padding:12px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);border-radius:14px;font-size:14px;font-weight:600;cursor:pointer}
+        .reset-btn:active{background:rgba(0,0,0,.03)}
 
-        .game-screen { display: none; }
-        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-top: 4px; position: relative; }
-        .game-header h2 { font-size: 18px; flex: 1; text-align: center; }
-        .back-btn {
-            background: none; border: none; font-size: 22px; cursor: pointer;
-            color: var(--text-secondary); padding: 4px 8px; line-height: 1;
-        }
-        .back-btn:active { color: var(--error); }
-        .round-badge { background: var(--primary); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+        .counter{display:inline-block;background:var(--primary);color:#fff;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:12px}
+        .counter.ready{background:var(--success)}
 
-        .timer-bar { width: 100%; height: 6px; background: #eee; border-radius: 3px; margin-bottom: 14px; overflow: hidden; }
-        .timer-fill { height: 100%; background: var(--primary); border-radius: 3px; width: 100%; transition: width 0.1s linear; }
-        .timer-fill.warning { background: var(--warning); }
-        .timer-fill.danger { background: var(--error); }
+        .game-screen{display:none}
+        .game-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-top:4px;position:relative}
+        .game-header h2{font-size:18px;flex:1;text-align:center}
+        .back-btn{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-secondary);padding:4px 8px;line-height:1}
+        .back-btn:active{color:var(--error)}
+        .round-badge{background:var(--primary);color:#fff;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700}
 
-        .progress-bar { display: flex; gap: 6px; margin-bottom: 14px; justify-content: center; flex-wrap: wrap; }
-        .progress-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
-        .progress-dot.active { background: var(--primary); transform: scale(1.3); }
-        .progress-dot.done { background: var(--success); }
-        .progress-dot.retry { background: var(--warning); }
+        .timer-bar{width:100%;height:6px;background:#eee;border-radius:3px;margin-bottom:14px;overflow:hidden}
+        .timer-fill{height:100%;background:var(--primary);border-radius:3px;width:100%;transition:width .1s linear}
+        .timer-fill.warning{background:var(--warning)}
+        .timer-fill.danger{background:var(--error)}
 
-        .hint { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 12px; min-height: 20px; font-weight: 500; }
+        .progress-bar{display:flex;gap:6px;margin-bottom:14px;justify-content:center;flex-wrap:wrap}
+        .progress-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all .3s}
+        .progress-dot.active{background:var(--primary);transform:scale(1.3)}
+        .progress-dot.done{background:var(--success)}
+        .progress-dot.retry{background:var(--warning)}
 
-        .game-photo-wrap {
-            text-align: center; margin-bottom: 12px;
-        }
-        .game-photo-wrap img {
-            max-width: 100%; width: auto; height: auto;
-            max-height: 42vh; display: inline-block;
-            border-radius: 16px; box-shadow: var(--shadow);
-            background: #f0f0f0;
-        }
-        .photo-prefix {
-            text-align: center; font-size: 28px; font-weight: 800;
-            color: var(--primary); margin-bottom: 16px;
-            letter-spacing: 1px;
-        }
+        .hint{text-align:center;color:var(--text-secondary);font-size:14px;margin-bottom:12px;min-height:20px;font-weight:500}
 
-        .words-title { text-align: center; color: var(--text-secondary); font-size: 13px; margin-bottom: 10px; font-weight: 600; }
-        .words-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .word-btn {
-            background: var(--surface); border: 2px solid var(--border); border-radius: 14px;
-            padding: 18px; font-size: 16px; font-weight: 700; cursor: pointer;
-            transition: all 0.15s; text-align: center; color: var(--text);
-        }
-        .word-btn:active { transform: scale(0.96); }
-        .word-btn.selected { border-color: var(--primary); background: rgba(36, 129, 204, 0.08); color: var(--primary); }
-        .word-btn.correct { border-color: var(--success); background: rgba(46, 204, 113, 0.1); color: var(--success); }
-        .word-btn.wrong { border-color: var(--error); background: rgba(231, 76, 60, 0.1); color: var(--error); }
+        .game-photo-wrap{text-align:center;margin-bottom:12px}
+        .game-photo-wrap img{max-width:100%;width:auto;height:auto;max-height:42vh;display:inline-block;border-radius:16px;box-shadow:var(--shadow);background:#f0f0f0}
+        .photo-prefix{text-align:center;font-size:28px;font-weight:800;color:var(--primary);margin-bottom:16px;letter-spacing:1px}
 
-        .word-bank { background: var(--surface); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); }
-        .word-category { margin-bottom: 16px; }
-        .word-category h4 { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .word-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-        .word-chip {
-            background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
-            padding: 8px 14px; font-size: 14px; font-weight: 600; cursor: pointer;
-            transition: all 0.15s; color: var(--text);
-        }
-        .word-chip:active { transform: scale(0.95); background: var(--primary); color: white; border-color: var(--primary); }
+        .words-title{text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:10px;font-weight:600}
+        .words-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .word-btn{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:18px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center;color:var(--text)}
+        .word-btn:active{transform:scale(.96)}
+        .word-btn.correct{border-color:var(--success);background:rgba(46,204,113,.1);color:var(--success)}
+        .word-btn.wrong{border-color:var(--error);background:rgba(231,76,60,.1);color:var(--error)}
 
-        .toast {
-            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
-            background: rgba(0,0,0,0.85); color: white; padding: 12px 20px; border-radius: 12px;
-            font-size: 14px; font-weight: 600; z-index: 3000; opacity: 0; transition: all 0.3s;
-        }
-        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .word-bank{background:var(--surface);border-radius:16px;padding:16px;box-shadow:var(--shadow)}
+        .word-category{margin-bottom:16px}
+        .word-category h4{font-size:14px;color:var(--text-secondary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+        .word-chips{display:flex;flex-wrap:wrap;gap:8px}
+        .word-chip{background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:8px 14px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--text)}
+        .word-chip:active{transform:scale(.95);background:var(--primary);color:#fff;border-color:var(--primary)}
 
-        .training-preview { text-align: center; padding: 20px; }
-        .training-preview p { color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; line-height: 1.5; }
-        .training-card {
-            background: var(--surface); border-radius: 20px; padding: 24px;
-            box-shadow: var(--shadow); text-align: center; max-width: 320px; margin: 0 auto;
-        }
-        .training-card img {
-            max-width: 100%; width: auto; height: auto;
-            max-height: 40vh; display: inline-block;
-            border-radius: 16px; background: #f0f0f0;
-        }
-        .training-card .training-word { font-size: 22px; font-weight: 800; margin: 16px 0 20px; color: var(--text); }
-        .training-buttons { display: flex; gap: 12px; justify-content: center; }
-        .training-btn {
-            width: 64px; height: 64px; border-radius: 50%; border: none;
-            font-size: 28px; cursor: pointer; transition: all 0.2s; display: flex;
-            align-items: center; justify-content: center; box-shadow: var(--shadow);
-        }
-        .training-btn.yes { background: var(--success); color: white; }
-        .training-btn.no { background: var(--error); color: white; }
-        .training-btn:active { transform: scale(0.92); }
+        .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(0,0,0,.85);color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:600;z-index:3000;opacity:0;transition:all .3s}
+        .toast.show{transform:translateX(-50%) translateY(0);opacity:1}
 
-        .training-progress { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; font-weight: 600; }
+        .training-preview{text-align:center;padding:20px}
+        .training-preview p{color:var(--text-secondary);font-size:14px;margin-bottom:16px;line-height:1.5}
+        .training-card{background:var(--surface);border-radius:20px;padding:24px;box-shadow:var(--shadow);text-align:center;max-width:320px;margin:0 auto}
+        .training-card img{max-width:100%;width:auto;height:auto;max-height:40vh;display:inline-block;border-radius:16px;background:#f0f0f0}
+        .training-card .training-word{font-size:22px;font-weight:800;margin:16px 0 20px;color:var(--text)}
+        .training-buttons{display:flex;gap:12px;justify-content:center}
+        .training-btn{width:64px;height:64px;border-radius:50%;border:none;font-size:28px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+        .training-btn.yes{background:var(--success);color:#fff}
+        .training-btn.no{background:var(--error);color:#fff}
+        .training-btn:active{transform:scale(.92)}
+        .training-progress{text-align:center;color:var(--text-secondary);font-size:14px;margin-bottom:16px;font-weight:600}
 
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
-            z-index: 1000; padding: 20px; backdrop-filter: blur(4px);
-        }
-        .modal-overlay.active { display: flex; animation: fadeIn 0.2s; }
-        .modal {
-            background: var(--surface); border-radius: 24px; padding: 32px 24px;
-            text-align: center; max-width: 320px; width: 100%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.2); animation: slideUp 0.3s ease;
-        }
-        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .modal-icon { font-size: 56px; margin-bottom: 12px; }
-        .modal h3 { font-size: 22px; margin-bottom: 8px; }
-        .modal p { color: var(--text-secondary); font-size: 15px; margin-bottom: 20px; line-height: 1.4; }
-        .modal-btn {
-            width: 100%; padding: 14px; border: none; border-radius: 12px;
-            font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s;
-        }
-        .modal-btn:active { transform: scale(0.98); }
-        .modal-btn.success { background: var(--success); color: white; }
+        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;backdrop-filter:blur(4px)}
+        .modal-overlay.active{display:flex;animation:fadeIn .2s}
+        .modal{background:var(--surface);border-radius:24px;padding:32px 24px;text-align:center;max-width:320px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:slideUp .3s ease}
+        @keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+        .modal-icon{font-size:56px;margin-bottom:12px}
+        .modal h3{font-size:22px;margin-bottom:8px}
+        .modal p{color:var(--text-secondary);font-size:15px;margin-bottom:20px;line-height:1.4}
+        .modal-btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;transition:all .2s}
+        .modal-btn:active{transform:scale(.98)}
+        .modal-btn.success{background:var(--success);color:#fff}
 
-        .confetti {
-            position: fixed; width: 8px; height: 8px; top: -10px;
-            border-radius: 2px; z-index: 2000; pointer-events: none;
-            animation: confettiFall 2.5s linear forwards;
-        }
-        @keyframes confettiFall {
-            to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-        }
+        .confetti{position:fixed;width:8px;height:8px;top:-10px;border-radius:2px;z-index:2000;pointer-events:none;animation:confettiFall 2.5s linear forwards}
+        @keyframes confettiFall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
 
-        #fileInput { display: none; }
-        .saved-badge { text-align: center; font-size: 12px; color: var(--success); margin-bottom: 10px; font-weight: 600; opacity: 0; transition: opacity 0.3s; }
-        .saved-badge.show { opacity: 1; }
+        #fileInput{display:none}
+        .saved-badge{text-align:center;font-size:12px;color:var(--success);margin-bottom:10px;font-weight:600;opacity:0;transition:opacity .3s}
+        .saved-badge.show{opacity:1}
+
+        @media(max-width:360px){.photo-card .img-wrap{max-height:180px}}
     </style>
 </head>
 <body>
@@ -250,6 +132,7 @@
                 <div class="streak-badge" id="streakBadge">🔥 0</div>
                 <h1>🧠 Ассоциации</h1>
                 <p>Загрузи фото и придумай к ним слова</p>
+                <div class="version">v0.1</div>
                 <div class="saved-badge" id="savedBadge">✅ Сохранено</div>
                 <div class="counter" id="counter">Добавлено: 0/4</div>
             </div>
@@ -262,15 +145,13 @@
 
             <div class="tab-content active" id="tab-home">
                 <div class="photo-grid" id="photoGrid"></div>
-
-                <div class="add-btn" id="addBtn" onclick="document.getElementById('fileInput').click()">
+                <div class="add-btn" onclick="document.getElementById('fileInput').click()">
                     <span class="icon">➕</span>
                     <span>Добавить фото</span>
                 </div>
-
                 <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
                 <button class="start-btn" id="startBtn" disabled onclick="startGame()">▶️ Начать игру</button>
-                <button class="reset-btn" id="resetBtn" style="display:none;" onclick="resetAll()">🗑 Очистить всё</button>
+                <button class="reset-btn" id="resetBtn" style="display:none" onclick="resetAll()">🗑 Очистить всё</button>
             </div>
 
             <div class="tab-content" id="tab-words">
@@ -280,9 +161,9 @@
             <div class="tab-content" id="tab-training">
                 <div id="trainingIntro" class="training-preview">
                     <p>Быстрое кондиционирование по методу Galatea.<br>20 пар «фото + слово». Жми ✅ если это про тебя.</p>
-                    <button class="start-btn" id="trainingStartBtn" onclick="startTraining()">⚡ Начать тренировку</button>
+                    <button class="start-btn" onclick="startTraining()">⚡ Начать тренировку</button>
                 </div>
-                <div id="trainingGame" style="display:none;">
+                <div id="trainingGame" style="display:none">
                     <div class="training-progress" id="trainingProgress">1 / 20</div>
                     <div class="training-card">
                         <img id="trainingImg" src="" alt="">
@@ -293,10 +174,10 @@
                         </div>
                     </div>
                 </div>
-                <div id="trainingDone" style="display:none; text-align:center; padding:40px 20px;">
-                    <div style="font-size:48px; margin-bottom:12px;">🔥</div>
+                <div id="trainingDone" style="display:none;text-align:center;padding:40px 20px">
+                    <div style="font-size:48px;margin-bottom:12px">🔥</div>
                     <h3>Тренировка завершена!</h3>
-                    <p style="color:var(--text-secondary); margin:12px 0 20px;">Ты закрепил ассоциации. Возвращайся завтра!</p>
+                    <p style="color:var(--text-secondary);margin:12px 0 20px">Ты закрепил ассоциации. Возвращайся завтра!</p>
                     <button class="start-btn" onclick="switchTab('home')">🏠 На главную</button>
                 </div>
             </div>
@@ -311,9 +192,7 @@
             <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
             <div class="progress-bar" id="progressBar"></div>
             <div class="hint" id="hint">Какое слово подходит?</div>
-            <div class="game-photo-wrap" id="gamePhotoWrap">
-                <img id="gameImg" src="" alt="">
-            </div>
+            <div class="game-photo-wrap"><img id="gameImg" src="" alt=""></div>
             <div class="photo-prefix" id="photoPrefix">Я</div>
             <div class="words-title">Выбери слово:</div>
             <div class="words-grid" id="wordsGrid"></div>
@@ -328,521 +207,59 @@
             <button class="modal-btn success" onclick="closeWin()">Играть снова</button>
         </div>
     </div>
-
     <div class="toast" id="toast"></div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready(); tg.expand();
+        const tg=window.Telegram.WebApp;tg.ready();tg.expand();
+        const OLD_DB='AssociationsGame',NEW_DB='AssociationsGame_v3',VER=1,STORE_P='photos',STORE_M='meta';
+        let photos=[],streak={count:0,lastWinDate:null},saveTimer=null,game={rounds:[],current:0,processing:false,timer:null,timeLeft:0,maxTime:12},training={items:[],current:0,total:20};
+        const wordBank={'Followership':['инициативный','преданный','ответственный','командный','надёжный','лояльный','послушный','исполнительный'],'Уверенность':['сильный','уверенный','смелый','решительный','достойный','неповторимый','харизматичный'],'Спокойствие':['спокойный','уравновешенный','мудрый','терпеливый','внимательный','осознанный'],'Энергия':['энергичный','активный','целеустремлённый','продуктивный','динамичный','воодушевлённый']};
 
-        const OLD_DB_NAME = 'AssociationsGame';
-        const NEW_DB_NAME = 'AssociationsGame_v3';
-        const DB_VERSION = 1;
-        const STORE_PHOTOS = 'photos';
-        const STORE_META = 'meta';
+        function openDB(name){return new Promise((res,rej)=>{const r=indexedDB.open(name,VER);r.onerror=()=>rej(r.error);r.onsuccess=()=>res(r.result);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE_P))d.createObjectStore(STORE_P,{keyPath:'id'});if(!d.objectStoreNames.contains(STORE_M))d.createObjectStore(STORE_M,{keyPath:'key'})}})}
+        async function migrate(){return new Promise(res=>{try{const r=indexedDB.open(OLD_DB);r.onsuccess=async e=>{const old=e.target.result,neo=await openDB(NEW_DB);let mp=[],mm=null;if(old.objectStoreNames.contains(STORE_P)){const t=old.transaction(STORE_P,'readonly'),d=await new Promise(r2=>{const q=t.objectStore(STORE_P).getAll();q.onsuccess=()=>r2(q.result);q.onerror=()=>r2([])});if(d?.length){const n=neo.transaction(STORE_P,'readwrite');for(const i of d){if(!i.prefix)i.prefix='Я';await n.objectStore(STORE_P).put(i)}mp=d}}if(old.objectStoreNames.contains(STORE_M)){const t=old.transaction(STORE_M,'readonly'),d=await new Promise(r2=>{const q=t.objectStore(STORE_M).getAll();q.onsuccess=()=>r2(q.result);q.onerror=()=>r2([])});if(d?.length){const n=neo.transaction(STORE_M,'readwrite');for(const i of d)await n.objectStore(STORE_M).put(i);mm=d}}old.close();if(mp.length||mm)indexedDB.deleteDatabase(OLD_DB);res({photos:mp,meta:mm})};r.onerror=()=>res({photos:[],meta:null})}catch(e){res({photos:[],meta:null})}})}
+        async function savePhotos(){const d=await openDB(NEW_DB),t=d.transaction(STORE_P,'readwrite');await t.objectStore(STORE_P).clear();for(const p of photos)await t.objectStore(STORE_P).put(p);showSaved()}
+        async function loadPhotos(){const d=await openDB(NEW_DB),t=d.transaction(STORE_P,'readonly');return new Promise((res,rej)=>{const r=t.objectStore(STORE_P).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+        async function saveMeta(k,v){const d=await openDB(NEW_DB),t=d.transaction(STORE_M,'readwrite');await t.objectStore(STORE_M).put({key:k,value:JSON.stringify(v)})}
+        async function loadMeta(k,def){const d=await openDB(NEW_DB),t=d.transaction(STORE_M,'readonly');return new Promise(res=>{const r=t.objectStore(STORE_M).get(k);r.onsuccess=()=>res(r.result?JSON.parse(r.result.value):def);r.onerror=()=>res(def)})}
+        async function clearPhotos(){const d=await openDB(NEW_DB);await d.transaction(STORE_P,'readwrite').objectStore(STORE_P).clear()}
 
-        async function migrateFromOldDB() {
-            return new Promise((resolve) => {
-                try {
-                    const req = indexedDB.open(OLD_DB_NAME);
-                    req.onsuccess = async (e) => {
-                        const oldDB = e.target.result;
-                        const newDB = await openNewDB();
-                        let migratedPhotos = [];
-                        let migratedMeta = null;
+        async function init(){let ep=await loadPhotos()||[],em=await loadMeta('streak',null);if(!ep.length&&!em){const m=await migrate();if(m.photos.length){photos=m.photos;await savePhotos()}if(m.meta){const s=m.meta.find(x=>x.key==='streak');if(s){streak=JSON.parse(s.value);await saveMeta('streak',streak)}}}photos=await loadPhotos()||[];photos.forEach(p=>{if(!p.prefix)p.prefix='Я'});streak=await loadMeta('streak',{count:0,lastWinDate:null});checkStreak();renderPhotos();renderWordBank()}
+        function getToday(){return new Date().toISOString().split('T')[0]}
+        function getYesterday(){return new Date(Date.now()-864e5).toISOString().split('T')[0]}
+        function checkStreak(){const t=getToday(),y=getYesterday();if(!streak.lastWinDate)streak.count=0;else if(streak.lastWinDate!==t&&streak.lastWinDate!==y)streak.count=0;renderStreak()}
+        function renderStreak(){const el=document.getElementById('streakBadge');if(streak.count>0){el.textContent='🔥 '+streak.count;el.classList.add('active')}else el.classList.remove('active')}
+        async function onWin(){const t=getToday(),y=getYesterday();if(streak.lastWinDate===t);else if(streak.lastWinDate===y)streak.count++;else streak.count=1;streak.lastWinDate=t;await saveMeta('streak',streak);renderStreak()}
+        function switchTab(tab){document.querySelectorAll('.nav-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id==='tab-'+tab))}
 
-                        if (oldDB.objectStoreNames.contains(STORE_PHOTOS)) {
-                            const tx = oldDB.transaction(STORE_PHOTOS, 'readonly');
-                            const data = await new Promise((res) => {
-                                const r = tx.objectStore(STORE_PHOTOS).getAll();
-                                r.onsuccess = () => res(r.result);
-                                r.onerror = () => res([]);
-                            });
-                            if (data && data.length > 0) {
-                                const newTx = newDB.transaction(STORE_PHOTOS, 'readwrite');
-                                for (const item of data) {
-                                    if (!item.prefix) item.prefix = 'Я';
-                                    await newTx.objectStore(STORE_PHOTOS).put(item);
-                                }
-                                migratedPhotos = data;
-                            }
-                        }
+        function handleFiles(files){const arr=Array.from(files).filter(f=>f.type.startsWith('image/'));let done=0;arr.forEach(file=>{const r=new FileReader();r.onload=e=>{photos.push({id:Date.now()+Math.random(),dataUrl:e.target.result,word:'',prefix:'Я'});done++;if(done===arr.length){renderPhotos();scheduleSave()}};r.readAsDataURL(file)});document.getElementById('fileInput').value=''}
+        function scheduleSave(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(()=>savePhotos(),600)}
+        function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+        function renderPhotos(){const g=document.getElementById('photoGrid');g.innerHTML='';photos.forEach((p,i)=>{const c=document.createElement('div');c.className='photo-card';c.innerHTML=`<button class="delete-btn" onclick="deletePhoto(${i})">×</button><div class="img-wrap"><img src="${p.dataUrl}" alt=""></div><div class="input-group"><input placeholder="Слово..." value="${esc(p.word)}" oninput="updateWord(${i},this.value)"><input placeholder="Я" value="${esc(p.prefix||'Я')}" oninput="updatePrefix(${i},this.value)"></div>`;g.appendChild(c)});const c=document.getElementById('counter');c.textContent='Добавлено: '+photos.length+'/4';c.classList.toggle('ready',photos.length>=4);document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0));document.getElementById('resetBtn').style.display=photos.length>0?'block':'none'}
+        function updateWord(i,v){photos[i].word=v.trim();document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0));scheduleSave()}
+        function updatePrefix(i,v){photos[i].prefix=v.trim();scheduleSave()}
+        function deletePhoto(i){photos.splice(i,1);renderPhotos();scheduleSave()}
+        async function resetAll(){if(!confirm('Удалить все фото, слова и стрик?'))return;photos=[];streak={count:0,lastWinDate:null};await clearPhotos();await saveMeta('streak',streak);renderPhotos();renderStreak()}
+        function showSaved(){const b=document.getElementById('savedBadge');b.classList.add('show');setTimeout(()=>b.classList.remove('show'),1500)}
+        function renderWordBank(){const c=document.getElementById('wordBank');c.innerHTML='';for(const[cat,words]of Object.entries(wordBank)){const d=document.createElement('div');d.className='word-category';d.innerHTML=`<h4>${cat}</h4>`;const ch=document.createElement('div');ch.className='word-chips';words.forEach(w=>{const b=document.createElement('button');b.className='word-chip';b.textContent=w;b.onclick=()=>copyWord(w);ch.appendChild(b)});d.appendChild(ch);c.appendChild(d)}}
+        function copyWord(w){if(navigator.clipboard)navigator.clipboard.writeText(w);showToast('Скопировано: «'+w+'» — вставь в поле слова')}
+        function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
+        function exitGame(){clearInterval(game.timer);document.getElementById('gameScreen').style.display='none';document.getElementById('setupScreen').style.display='block';switchTab('home')}
 
-                        if (oldDB.objectStoreNames.contains(STORE_META)) {
-                            const tx = oldDB.transaction(STORE_META, 'readonly');
-                            const data = await new Promise((res) => {
-                                const r = tx.objectStore(STORE_META).getAll();
-                                r.onsuccess = () => res(r.result);
-                                r.onerror = () => res([]);
-                            });
-                            if (data && data.length > 0) {
-                                const newTx = newDB.transaction(STORE_META, 'readwrite');
-                                for (const item of data) await newTx.objectStore(STORE_META).put(item);
-                                migratedMeta = data;
-                            }
-                        }
+        function startGame(){if(photos.length<4)return;const total=photos.length+5;game.rounds=[];let lastId=null;for(let i=0;i<total;i++){let target;if(photos.length>1&&lastId!==null){const a=photos.filter(p=>p.id!==lastId);target=a[Math.floor(Math.random()*a.length)]}else target=photos[Math.floor(Math.random()*photos.length)];lastId=target.id;const other=photos.filter(p=>p.id!==target.id).map(p=>p.word);const dist=[];while(dist.length<3&&other.length>0){const w=other[Math.floor(Math.random()*other.length)];if(!dist.includes(w)&&w!==target.word)dist.push(w)}while(dist.length<3)dist.push('???');const words=[target.word,...dist].sort(()=>Math.random()-.5);game.rounds.push({target,words,isRetry:false})}game.current=0;game.processing=false;document.getElementById('setupScreen').style.display='none';document.getElementById('gameScreen').style.display='block';startRound()}
+        function startRound(){if(game.current>=game.rounds.length){showWin();return}game.processing=false;game.timeLeft=game.maxTime;const r=game.rounds[game.current];document.getElementById('roundBadge').textContent='Раунд '+(game.current+1)+' / '+game.rounds.length;renderProgress();document.getElementById('hint').textContent='Какое слово подходит?';document.getElementById('hint').style.color='var(--text-secondary)';document.getElementById('gameImg').src=r.target.dataUrl;document.getElementById('photoPrefix').textContent=r.target.prefix||'Я';const wg=document.getElementById('wordsGrid');wg.innerHTML='';r.words.forEach(w=>{const b=document.createElement('button');b.className='word-btn';b.textContent=w;b.dataset.word=w;b.onclick=()=>checkWord(w,b);wg.appendChild(b)});startTimer()}
+        function renderProgress(){const b=document.getElementById('progressBar');b.innerHTML='';game.rounds.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';if(i<game.current)d.classList.add('done');else if(i===game.current)d.classList.add('active');if(r.isRetry)d.style.background='#f39c12';b.appendChild(d)})}
+        function startTimer(){clearInterval(game.timer);const f=document.getElementById('timerFill');f.style.width='100%';f.className='timer-fill';game.timer=setInterval(()=>{game.timeLeft-=.1;const p=Math.max(0,(game.timeLeft/game.maxTime)*100);f.style.width=p+'%';if(game.timeLeft<=game.maxTime*.4)f.classList.add('warning');if(game.timeLeft<=game.maxTime*.2)f.classList.add('danger');if(game.timeLeft<=0){clearInterval(game.timer);handleTimeout()}},100)}
+        function handleTimeout(){if(game.processing)return;game.processing=true;document.getElementById('hint').textContent='⏰ Время вышло! Раунд повторится позже';document.getElementById('hint').style.color='var(--error)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');scheduleRetry();setTimeout(()=>{game.current++;startRound()},1200)}
+        function checkWord(word,btn){if(game.processing)return;clearInterval(game.timer);game.processing=true;const r=game.rounds[game.current];const ok=word===r.target.word;document.querySelectorAll('.word-btn').forEach(b=>b.disabled=true);if(ok){btn.classList.add('correct');document.getElementById('hint').textContent='✅ '+(r.target.prefix||'Я')+' '+word+'!';document.getElementById('hint').style.color='var(--success)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');setTimeout(()=>{game.current++;startRound()},900)}else{btn.classList.add('wrong');document.getElementById('hint').textContent='❌ Неправильно. Раунд повторится позже';document.getElementById('hint').style.color='var(--error)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');scheduleRetry();setTimeout(()=>{game.current++;startRound()},1200)}}
+        function scheduleRetry(){const r=game.rounds[game.current];const pos=Math.min(game.current+2,game.rounds.length);if(!r.isRetry)game.rounds.splice(pos,0,{...r,isRetry:true})}
+        function showWin(){onWin();document.getElementById('winTitle').textContent='🎉 Победа!';document.getElementById('winText').textContent='Ты прошёл все раунды! 🔥 Streak: '+streak.count+' дней';document.getElementById('winModal').classList.add('active');launchConfetti()}
+        function closeWin(){document.getElementById('winModal').classList.remove('active');document.getElementById('gameScreen').style.display='none';document.getElementById('setupScreen').style.display='block';switchTab('home')}
 
-                        oldDB.close();
-                        if (migratedPhotos.length > 0 || migratedMeta) {
-                            indexedDB.deleteDatabase(OLD_DB_NAME);
-                        }
-                        resolve({ photos: migratedPhotos, meta: migratedMeta });
-                    };
-                    req.onerror = () => resolve({ photos: [], meta: null });
-                } catch (e) { resolve({ photos: [], meta: null }); }
-            });
-        }
+        function startTraining(){if(!photos.length){showToast('Сначала добавь фото на главной');return}training.current=0;training.items=[];const all=photos.map(p=>p.word).filter(Boolean);for(let i=0;i<training.total;i++){const ph=photos[Math.floor(Math.random()*photos.length)];const ok=Math.random()>.3;let w;if(ok||all.length<=1)w=ph.word;else{const o=all.filter(x=>x!==ph.word);w=o.length?o[Math.floor(Math.random()*o.length)]:ph.word}training.items.push({photo:ph,word:w,isCorrect:w===ph.word})}document.getElementById('trainingIntro').style.display='none';document.getElementById('trainingDone').style.display='none';document.getElementById('trainingGame').style.display='block';showTrainingItem()}
+        function showTrainingItem(){if(training.current>=training.items.length){document.getElementById('trainingGame').style.display='none';document.getElementById('trainingDone').style.display='block';return}const it=training.items[training.current];document.getElementById('trainingProgress').textContent=(training.current+1)+' / '+training.total;document.getElementById('trainingImg').src=it.photo.dataUrl;document.getElementById('trainingWord').textContent=it.word}
+        function trainingAnswer(ans){const it=training.items[training.current];const ok=(ans&&it.isCorrect)||(!ans&&!it.isCorrect);if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred(ok?'success':'error');training.current++;showTrainingItem()}
 
-        function openNewDB() {
-            return new Promise((resolve, reject) => {
-                const req = indexedDB.open(NEW_DB_NAME, DB_VERSION);
-                req.onerror = () => reject(req.error);
-                req.onsuccess = () => resolve(req.result);
-                req.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains(STORE_PHOTOS)) db.createObjectStore(STORE_PHOTOS, { keyPath: 'id' });
-                    if (!db.objectStoreNames.contains(STORE_META)) db.createObjectStore(STORE_META, { keyPath: 'key' });
-                };
-            });
-        }
-
-        async function savePhotos() {
-            const db = await openNewDB();
-            const tx = db.transaction(STORE_PHOTOS, 'readwrite');
-            await tx.objectStore(STORE_PHOTOS).clear();
-            for (const p of photos) await tx.objectStore(STORE_PHOTOS).put(p);
-            showSaved();
-        }
-
-        async function loadPhotos() {
-            const db = await openNewDB();
-            const tx = db.transaction(STORE_PHOTOS, 'readonly');
-            return new Promise((res, rej) => {
-                const r = tx.objectStore(STORE_PHOTOS).getAll();
-                r.onsuccess = () => res(r.result);
-                r.onerror = () => rej(r.error);
-            });
-        }
-
-        async function saveMeta(key, value) {
-            const db = await openNewDB();
-            const tx = db.transaction(STORE_META, 'readwrite');
-            await tx.objectStore(STORE_META).put({ key, value: JSON.stringify(value) });
-        }
-
-        async function loadMeta(key, defaultVal) {
-            const db = await openNewDB();
-            const tx = db.transaction(STORE_META, 'readonly');
-            return new Promise((res) => {
-                const r = tx.objectStore(STORE_META).get(key);
-                r.onsuccess = () => res(r.result ? JSON.parse(r.result.value) : defaultVal);
-                r.onerror = () => res(defaultVal);
-            });
-        }
-
-        async function clearPhotos() {
-            const db = await openNewDB();
-            await db.transaction(STORE_PHOTOS, 'readwrite').objectStore(STORE_PHOTOS).clear();
-        }
-
-        let photos = [];
-        let streak = { count: 0, lastWinDate: null };
-        let saveTimer = null;
-        let game = { rounds: [], current: 0, processing: false, timer: null, timeLeft: 0, maxTime: 12 };
-        let training = { items: [], current: 0, total: 20 };
-
-        const wordBank = {
-            'Followership': ['инициативный', 'преданный', 'ответственный', 'командный', 'надёжный', 'лояльный', 'послушный', 'исполнительный'],
-            'Уверенность': ['сильный', 'уверенный', 'смелый', 'решительный', 'достойный', 'неповторимый', 'харизматичный'],
-            'Спокойствие': ['спокойный', 'уравновешенный', 'мудрый', 'терпеливый', 'внимательный', 'осознанный'],
-            'Энергия': ['энергичный', 'активный', 'целеустремлённый', 'продуктивный', 'динамичный', 'воодушевлённый']
-        };
-
-        async function init() {
-            let existingPhotos = await loadPhotos() || [];
-            let existingMeta = await loadMeta('streak', null);
-
-            if (existingPhotos.length === 0 && !existingMeta) {
-                const migrated = await migrateFromOldDB();
-                if (migrated.photos.length > 0) {
-                    photos = migrated.photos;
-                    await savePhotos();
-                }
-                if (migrated.meta) {
-                    const streakItem = migrated.meta.find(m => m.key === 'streak');
-                    if (streakItem) {
-                        streak = JSON.parse(streakItem.value);
-                        await saveMeta('streak', streak);
-                    }
-                }
-            }
-
-            photos = await loadPhotos() || [];
-            photos.forEach(p => { if (!p.prefix) p.prefix = 'Я'; });
-            streak = await loadMeta('streak', { count: 0, lastWinDate: null });
-
-            checkStreak();
-            renderPhotos();
-            renderWordBank();
-        }
-
-        function getToday() { return new Date().toISOString().split('T')[0]; }
-        function getYesterday() { return new Date(Date.now() - 86400000).toISOString().split('T')[0]; }
-
-        function checkStreak() {
-            const today = getToday();
-            const yesterday = getYesterday();
-            if (!streak.lastWinDate) streak.count = 0;
-            else if (streak.lastWinDate !== today && streak.lastWinDate !== yesterday) streak.count = 0;
-            renderStreak();
-        }
-
-        function renderStreak() {
-            const el = document.getElementById('streakBadge');
-            if (streak.count > 0) { el.textContent = `🔥 ${streak.count}`; el.classList.add('active'); }
-            else el.classList.remove('active');
-        }
-
-        async function onWin() {
-            const today = getToday();
-            const yesterday = getYesterday();
-            if (streak.lastWinDate === today) { }
-            else if (streak.lastWinDate === yesterday) streak.count++;
-            else streak.count = 1;
-            streak.lastWinDate = today;
-            await saveMeta('streak', streak);
-            renderStreak();
-        }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
-        }
-
-        function handleFiles(files) {
-            const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
-            let done = 0;
-            arr.forEach(file => {
-                const r = new FileReader();
-                r.onload = e => {
-                    photos.push({ id: Date.now() + Math.random(), dataUrl: e.target.result, word: '', prefix: 'Я' });
-                    done++; if (done === arr.length) { renderPhotos(); scheduleSave(); }
-                };
-                r.readAsDataURL(file);
-            });
-            document.getElementById('fileInput').value = '';
-        }
-
-        function scheduleSave() {
-            if (saveTimer) clearTimeout(saveTimer);
-            saveTimer = setTimeout(() => savePhotos(), 600);
-        }
-
-        function renderPhotos() {
-            const grid = document.getElementById('photoGrid');
-            grid.innerHTML = '';
-            photos.forEach((p, i) => {
-                const card = document.createElement('div');
-                card.className = 'photo-card';
-                card.innerHTML = `
-                    <button class="delete-btn" onclick="deletePhoto(${i})">×</button>
-                    <div class="img-wrap"><img src="${p.dataUrl}" alt=""></div>
-                    <div class="inputs-wrap">
-                        <input type="text" class="word-input" placeholder="Слово..." value="${esc(p.word)}" oninput="updateWord(${i}, this.value)">
-                        <input type="text" class="word-input prefix-input" placeholder="Подсказка (Я)..." value="${esc(p.prefix || 'Я')}" oninput="updatePrefix(${i}, this.value)">
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-            const c = document.getElementById('counter');
-            c.textContent = `Добавлено: ${photos.length}/4`;
-            c.classList.toggle('ready', photos.length >= 4);
-            document.getElementById('startBtn').disabled = !(photos.length >= 4 && photos.every(p => p.word.length > 0));
-            document.getElementById('resetBtn').style.display = photos.length > 0 ? 'block' : 'none';
-        }
-
-        function updateWord(i, val) {
-            photos[i].word = val.trim();
-            document.getElementById('startBtn').disabled = !(photos.length >= 4 && photos.every(p => p.word.length > 0));
-            scheduleSave();
-        }
-
-        function updatePrefix(i, val) {
-            photos[i].prefix = val.trim();
-            scheduleSave();
-        }
-
-        function deletePhoto(i) {
-            photos.splice(i, 1);
-            renderPhotos();
-            scheduleSave();
-        }
-
-        async function resetAll() {
-            if (!confirm('Удалить все фото, слова и стрик?')) return;
-            photos = []; streak = { count: 0, lastWinDate: null };
-            await clearPhotos();
-            await saveMeta('streak', streak);
-            renderPhotos(); renderStreak();
-        }
-
-        function esc(t) {
-            const d = document.createElement('div');
-            d.textContent = t;
-            return d.innerHTML;
-        }
-
-        function showSaved() {
-            const b = document.getElementById('savedBadge');
-            b.classList.add('show');
-            setTimeout(() => b.classList.remove('show'), 1500);
-        }
-
-        function renderWordBank() {
-            const container = document.getElementById('wordBank');
-            container.innerHTML = '';
-            for (const [cat, words] of Object.entries(wordBank)) {
-                const div = document.createElement('div');
-                div.className = 'word-category';
-                div.innerHTML = `<h4>${cat}</h4>`;
-                const chips = document.createElement('div');
-                chips.className = 'word-chips';
-                words.forEach(w => {
-                    const chip = document.createElement('button');
-                    chip.className = 'word-chip';
-                    chip.textContent = w;
-                    chip.onclick = () => copyWord(w);
-                    chips.appendChild(chip);
-                });
-                div.appendChild(chips);
-                container.appendChild(div);
-            }
-        }
-
-        function copyWord(w) {
-            if (navigator.clipboard) navigator.clipboard.writeText(w);
-            showToast(`Скопировано: «${w}» — вставь в поле слова`);
-        }
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2500);
-        }
-
-        function exitGame() {
-            clearInterval(game.timer);
-            document.getElementById('gameScreen').style.display = 'none';
-            document.getElementById('setupScreen').style.display = 'block';
-            switchTab('home');
-        }
-
-        function startGame() {
-            if (photos.length < 4) return;
-            const totalRounds = photos.length + 5;
-            game.rounds = [];
-            let lastPhotoId = null;
-
-            for (let i = 0; i < totalRounds; i++) {
-                let target;
-                if (photos.length > 1 && lastPhotoId !== null) {
-                    const available = photos.filter(p => p.id !== lastPhotoId);
-                    target = available[Math.floor(Math.random() * available.length)];
-                } else {
-                    target = photos[Math.floor(Math.random() * photos.length)];
-                }
-                lastPhotoId = target.id;
-
-                const otherWords = photos.filter(p => p.id !== target.id).map(p => p.word);
-                const distractors = [];
-                while (distractors.length < 3 && otherWords.length > 0) {
-                    const w = otherWords[Math.floor(Math.random() * otherWords.length)];
-                    if (!distractors.includes(w) && w !== target.word) distractors.push(w);
-                }
-                while (distractors.length < 3) distractors.push('???');
-                const words = [target.word, ...distractors].sort(() => Math.random() - 0.5);
-                game.rounds.push({ target, words, isRetry: false });
-            }
-            game.current = 0;
-            game.processing = false;
-            document.getElementById('setupScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'block';
-            startRound();
-        }
-
-        function startRound() {
-            if (game.current >= game.rounds.length) { showWin(); return; }
-            game.processing = false;
-            game.timeLeft = game.maxTime;
-
-            const r = game.rounds[game.current];
-            document.getElementById('roundBadge').textContent = `Раунд ${game.current + 1} / ${game.rounds.length}`;
-            renderProgress();
-            document.getElementById('hint').textContent = 'Какое слово подходит?';
-            document.getElementById('hint').style.color = 'var(--text-secondary)';
-
-            document.getElementById('gameImg').src = r.target.dataUrl;
-            document.getElementById('photoPrefix').textContent = r.target.prefix || 'Я';
-
-            const wg = document.getElementById('wordsGrid');
-            wg.innerHTML = '';
-            r.words.forEach(w => {
-                const b = document.createElement('button');
-                b.className = 'word-btn';
-                b.textContent = w;
-                b.dataset.word = w;
-                b.onclick = () => checkWord(w, b);
-                wg.appendChild(b);
-            });
-
-            startTimer();
-        }
-
-        function renderProgress() {
-            const bar = document.getElementById('progressBar');
-            bar.innerHTML = '';
-            game.rounds.forEach((r, i) => {
-                const d = document.createElement('div');
-                d.className = 'progress-dot';
-                if (i < game.current) d.classList.add('done');
-                else if (i === game.current) d.classList.add('active');
-                if (r.isRetry) d.style.background = '#f39c12';
-                bar.appendChild(d);
-            });
-        }
-
-        function startTimer() {
-            clearInterval(game.timer);
-            const fill = document.getElementById('timerFill');
-            fill.style.width = '100%';
-            fill.className = 'timer-fill';
-            game.timer = setInterval(() => {
-                game.timeLeft -= 0.1;
-                const pct = Math.max(0, (game.timeLeft / game.maxTime) * 100);
-                fill.style.width = pct + '%';
-                if (game.timeLeft <= game.maxTime * 0.4) fill.classList.add('warning');
-                if (game.timeLeft <= game.maxTime * 0.2) fill.classList.add('danger');
-                if (game.timeLeft <= 0) { clearInterval(game.timer); handleTimeout(); }
-            }, 100);
-        }
-
-        function handleTimeout() {
-            if (game.processing) return;
-            game.processing = true;
-            document.getElementById('hint').textContent = '⏰ Время вышло! Раунд повторится позже';
-            document.getElementById('hint').style.color = 'var(--error)';
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-            scheduleRetry();
-            setTimeout(() => { game.current++; startRound(); }, 1200);
-        }
-
-        function checkWord(word, btnEl) {
-            if (game.processing) return;
-            clearInterval(game.timer);
-            game.processing = true;
-
-            const round = game.rounds[game.current];
-            const isCorrect = word === round.target.word;
-
-            document.querySelectorAll('.word-btn').forEach(b => b.disabled = true);
-
-            if (isCorrect) {
-                btnEl.classList.add('correct');
-                document.getElementById('hint').textContent = `✅ ${round.target.prefix || 'Я'} ${word}!`;
-                document.getElementById('hint').style.color = 'var(--success)';
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                setTimeout(() => { game.current++; startRound(); }, 900);
-            } else {
-                btnEl.classList.add('wrong');
-                document.getElementById('hint').textContent = '❌ Неправильно. Раунд повторится позже';
-                document.getElementById('hint').style.color = 'var(--error)';
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                scheduleRetry();
-                setTimeout(() => { game.current++; startRound(); }, 1200);
-            }
-        }
-
-        function scheduleRetry() {
-            const currentRound = game.rounds[game.current];
-            const insertPos = Math.min(game.current + 2, game.rounds.length);
-            if (!currentRound.isRetry) {
-                game.rounds.splice(insertPos, 0, { ...currentRound, isRetry: true });
-            }
-        }
-
-        function showWin() {
-            onWin();
-            document.getElementById('winTitle').textContent = '🎉 Победа!';
-            document.getElementById('winText').textContent = `Ты прошёл все раунды! 🔥 Streak: ${streak.count} дней`;
-            document.getElementById('winModal').classList.add('active');
-            launchConfetti();
-        }
-
-        function closeWin() {
-            document.getElementById('winModal').classList.remove('active');
-            document.getElementById('gameScreen').style.display = 'none';
-            document.getElementById('setupScreen').style.display = 'block';
-            switchTab('home');
-        }
-
-        function startTraining() {
-            if (photos.length === 0) { showToast('Сначала добавь фото на главной'); return; }
-            training.current = 0;
-            training.items = [];
-            const allWords = photos.map(p => p.word).filter(Boolean);
-            for (let i = 0; i < training.total; i++) {
-                const photo = photos[Math.floor(Math.random() * photos.length)];
-                const isCorrect = Math.random() > 0.3;
-                let word;
-                if (isCorrect || allWords.length <= 1) word = photo.word;
-                else {
-                    const other = allWords.filter(w => w !== photo.word);
-                    word = other.length ? other[Math.floor(Math.random() * other.length)] : photo.word;
-                }
-                training.items.push({ photo, word, isCorrect: word === photo.word });
-            }
-            document.getElementById('trainingIntro').style.display = 'none';
-            document.getElementById('trainingDone').style.display = 'none';
-            document.getElementById('trainingGame').style.display = 'block';
-            showTrainingItem();
-        }
-
-        function showTrainingItem() {
-            if (training.current >= training.items.length) {
-                document.getElementById('trainingGame').style.display = 'none';
-                document.getElementById('trainingDone').style.display = 'block';
-                return;
-            }
-            const item = training.items[training.current];
-            document.getElementById('trainingProgress').textContent = `${training.current + 1} / ${training.total}`;
-            document.getElementById('trainingImg').src = item.photo.dataUrl;
-            document.getElementById('trainingWord').textContent = item.word;
-        }
-
-        function trainingAnswer(answer) {
-            const item = training.items[training.current];
-            const isCorrect = (answer === true && item.isCorrect) || (answer === false && !item.isCorrect);
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred(isCorrect ? 'success' : 'error');
-            training.current++;
-            showTrainingItem();
-        }
-
-        function launchConfetti() {
-            const colors = ['#2481cc', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c'];
-            for (let i = 0; i < 60; i++) {
-                const el = document.createElement('div');
-                el.className = 'confetti';
-                el.style.left = Math.random() * 100 + 'vw';
-                el.style.background = colors[Math.floor(Math.random() * colors.length)];
-                el.style.animationDuration = (2 + Math.random() * 2) + 's';
-                el.style.animationDelay = Math.random() * 0.8 + 's';
-                el.style.width = (6 + Math.random() * 6) + 'px';
-                el.style.height = (6 + Math.random() * 6) + 'px';
-                document.body.appendChild(el);
-                setTimeout(() => el.remove(), 4000);
-            }
-        }
+        function launchConfetti(){const colors=['#2481cc','#e74c3c','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c'];for(let i=0;i<60;i++){const e=document.createElement('div');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=colors[Math.floor(Math.random()*colors.length)];e.style.animationDuration=(2+Math.random()*2)+'s';e.style.animationDelay=Math.random()*.8+'s';e.style.width=(6+Math.random()*6)+'px';e.style.height=(6+Math.random()*6)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
 
         init();
     </script>
