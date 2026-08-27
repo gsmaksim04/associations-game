@@ -35,7 +35,7 @@
         .input-group{display:flex;margin:10px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--bg)}
         .input-group input{flex:1;border:none;padding:10px 8px;font-size:14px;font-weight:600;text-align:center;outline:none;background:transparent;color:var(--text)}
         .input-group input:first-child{border-right:1px solid var(--border)}
-        .input-group input:last-child{color:var(--primary);background:rgba(36,129,204,.06);flex:0 0 48px;font-weight:700}
+        .input-group input:last-child{flex:0 0 70px;background:rgba(36,129,204,.1);color:var(--primary);font-weight:700;font-size:15px;letter-spacing:.5px}
 
         .add-btn{width:100%;padding:14px 20px;border:2px solid var(--primary);border-radius:14px;background:rgba(36,129,204,.08);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;color:var(--primary);gap:8px;font-size:15px;font-weight:700;margin-bottom:16px}
         .add-btn:active{transform:scale(.98);background:var(--primary);color:#fff}
@@ -233,7 +233,7 @@
 
         function handleFiles(files){const arr=Array.from(files).filter(f=>f.type.startsWith('image/'));let done=0;arr.forEach(file=>{const r=new FileReader();r.onload=e=>{photos.push({id:Date.now()+Math.random(),dataUrl:e.target.result,word:'',prefix:'Я'});done++;if(done===arr.length){renderPhotos();scheduleSave()}};r.readAsDataURL(file)});document.getElementById('fileInput').value=''}
         function scheduleSave(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(()=>savePhotos(),600)}
-        function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+        function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
         function renderPhotos(){const g=document.getElementById('photoGrid');g.innerHTML='';photos.forEach((p,i)=>{const c=document.createElement('div');c.className='photo-card';c.innerHTML=`<button class="delete-btn" onclick="deletePhoto(${i})">×</button><div class="img-wrap"><img src="${p.dataUrl}" alt=""></div><div class="input-group"><input placeholder="Слово..." value="${esc(p.word)}" oninput="updateWord(${i},this.value)"><input placeholder="Я" value="${esc(p.prefix||'Я')}" oninput="updatePrefix(${i},this.value)"></div>`;g.appendChild(c)});const c=document.getElementById('counter');c.textContent='Добавлено: '+photos.length+'/4';c.classList.toggle('ready',photos.length>=4);document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0));document.getElementById('resetBtn').style.display=photos.length>0?'block':'none'}
         function updateWord(i,v){photos[i].word=v.trim();document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0));scheduleSave()}
         function updatePrefix(i,v){photos[i].prefix=v.trim();scheduleSave()}
