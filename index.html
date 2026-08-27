@@ -46,37 +46,38 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
 
-        /* PHOTO GRID - portrait 3:4 */
-        .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+        /* PHOTO GRID - adaptive, no crop */
+        .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px; }
         .photo-card {
             background: var(--surface); border-radius: 16px; overflow: hidden;
             box-shadow: var(--shadow); position: relative; animation: fadeIn 0.3s ease;
         }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .photo-card img {
-            width: 100%; aspect-ratio: 3/4; object-fit: cover; object-position: center top;
-            display: block;
+            width: 100%; height: auto; display: block;
+            background: #f0f0f0;
         }
         .photo-card .word-input {
-            width: 100%; border: none; padding: 10px; font-size: 14px;
+            width: 100%; border: none; padding: 12px; font-size: 15px;
             text-align: center; font-weight: 600; outline: none; background: transparent;
         }
         .photo-card .word-input::placeholder { color: #bbb; }
         .photo-card .delete-btn {
-            position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.5);
-            color: white; border: none; width: 26px; height: 26px; border-radius: 50%;
-            cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
+            position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5);
+            color: white; border: none; width: 28px; height: 28px; border-radius: 50%;
+            cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
         }
 
+        /* ADD BUTTON - real button style */
         .add-btn {
-            width: 100%; aspect-ratio: 3/4; border: 2px dashed var(--border); border-radius: 16px;
-            background: var(--surface); display: flex; flex-direction: column;
+            width: 100%; padding: 14px 20px; border: 2px solid var(--primary); border-radius: 14px;
+            background: rgba(36, 129, 204, 0.08); display: flex; flex-direction: row;
             align-items: center; justify-content: center; cursor: pointer;
-            transition: all 0.2s; color: var(--text-secondary);
+            transition: all 0.2s; color: var(--primary); gap: 8px;
+            font-size: 15px; font-weight: 700; margin-bottom: 16px;
         }
-        .add-btn:active { transform: scale(0.96); border-color: var(--primary); color: var(--primary); }
-        .add-btn .icon { font-size: 28px; margin-bottom: 4px; }
-        .add-btn .label { font-size: 13px; font-weight: 500; }
+        .add-btn:active { transform: scale(0.98); background: var(--primary); color: white; }
+        .add-btn .icon { font-size: 20px; }
 
         .start-btn {
             width: 100%; padding: 16px; background: var(--primary); color: white; border: none;
@@ -117,16 +118,16 @@
 
         .hint { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 14px; min-height: 20px; font-weight: 500; }
 
-        /* GAME PHOTO - portrait, no crop issues */
+        /* GAME PHOTO - adaptive, no crop, bigger */
         .game-photo-single {
             background: var(--surface); border-radius: 20px; overflow: hidden;
             box-shadow: var(--shadow); margin-bottom: 20px; text-align: center;
             border: 3px solid transparent; transition: all 0.3s;
-            max-width: 280px; margin-left: auto; margin-right: auto;
+            max-width: 320px; margin-left: auto; margin-right: auto;
         }
         .game-photo-single img {
-            width: 100%; aspect-ratio: 3/4; object-fit: cover; object-position: center top;
-            display: block; max-height: 45vh;
+            width: 100%; height: auto; display: block;
+            max-height: 55vh; background: #f0f0f0;
         }
         .game-photo-single.correct { border-color: var(--success); }
         .game-photo-single.wrong { border-color: var(--error); animation: shake 0.4s; }
@@ -170,8 +171,8 @@
             box-shadow: var(--shadow); text-align: center; max-width: 320px; margin: 0 auto;
         }
         .training-card img {
-            width: 160px; aspect-ratio: 3/4; object-fit: cover; object-position: center top;
-            border-radius: 16px; margin-bottom: 16px;
+            width: 200px; height: auto; display: block; margin: 0 auto 16px;
+            border-radius: 16px; background: #f0f0f0;
         }
         .training-card .training-word { font-size: 22px; font-weight: 800; margin-bottom: 20px; color: var(--text); }
         .training-buttons { display: flex; gap: 12px; justify-content: center; }
@@ -220,11 +221,6 @@
         #fileInput { display: none; }
         .saved-badge { text-align: center; font-size: 12px; color: var(--success); margin-bottom: 10px; font-weight: 600; opacity: 0; transition: opacity 0.3s; }
         .saved-badge.show { opacity: 1; }
-
-        @media (max-width: 360px) {
-            .training-card img { width: 130px; }
-            .game-photo-single { max-width: 240px; }
-        }
     </style>
 </head>
 <body>
@@ -246,10 +242,12 @@
 
             <div class="tab-content active" id="tab-home">
                 <div class="photo-grid" id="photoGrid"></div>
+
                 <div class="add-btn" id="addBtn" onclick="document.getElementById('fileInput').click()">
-                    <div class="icon">➕</div>
-                    <div class="label">Добавить фото</div>
+                    <span class="icon">➕</span>
+                    <span>Добавить фото</span>
                 </div>
+
                 <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
                 <button class="start-btn" id="startBtn" disabled onclick="startGame()">▶️ Начать игру</button>
                 <button class="reset-btn" id="resetBtn" style="display:none;" onclick="resetAll()">🗑 Очистить всё</button>
@@ -360,7 +358,6 @@
                         }
 
                         oldDB.close();
-                        // DELETE OLD DB after successful migration
                         if (migratedPhotos.length > 0 || migratedMeta) {
                             indexedDB.deleteDatabase(OLD_DB_NAME);
                         }
