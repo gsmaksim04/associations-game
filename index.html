@@ -46,13 +46,17 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
 
+        /* PHOTO GRID - portrait 3:4 */
         .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
         .photo-card {
             background: var(--surface); border-radius: 16px; overflow: hidden;
             box-shadow: var(--shadow); position: relative; animation: fadeIn 0.3s ease;
         }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-        .photo-card img { width: 100%; height: 120px; object-fit: cover; display: block; }
+        .photo-card img {
+            width: 100%; aspect-ratio: 3/4; object-fit: cover; object-position: center top;
+            display: block;
+        }
         .photo-card .word-input {
             width: 100%; border: none; padding: 10px; font-size: 14px;
             text-align: center; font-weight: 600; outline: none; background: transparent;
@@ -65,10 +69,10 @@
         }
 
         .add-btn {
-            width: 100%; height: 120px; border: 2px dashed var(--border); border-radius: 16px;
+            width: 100%; aspect-ratio: 3/4; border: 2px dashed var(--border); border-radius: 16px;
             background: var(--surface); display: flex; flex-direction: column;
             align-items: center; justify-content: center; cursor: pointer;
-            transition: all 0.2s; color: var(--text-secondary); margin-bottom: 12px;
+            transition: all 0.2s; color: var(--text-secondary);
         }
         .add-btn:active { transform: scale(0.96); border-color: var(--primary); color: var(--primary); }
         .add-btn .icon { font-size: 28px; margin-bottom: 4px; }
@@ -95,7 +99,6 @@
         }
         .counter.ready { background: var(--success); }
 
-        /* GAME SCREEN - 1 PHOTO */
         .game-screen { display: none; }
         .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-top: 4px; }
         .game-header h2 { font-size: 18px; }
@@ -114,12 +117,17 @@
 
         .hint { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 14px; min-height: 20px; font-weight: 500; }
 
+        /* GAME PHOTO - portrait, no crop issues */
         .game-photo-single {
             background: var(--surface); border-radius: 20px; overflow: hidden;
             box-shadow: var(--shadow); margin-bottom: 20px; text-align: center;
             border: 3px solid transparent; transition: all 0.3s;
+            max-width: 280px; margin-left: auto; margin-right: auto;
         }
-        .game-photo-single img { width: 100%; max-height: 280px; object-fit: cover; display: block; }
+        .game-photo-single img {
+            width: 100%; aspect-ratio: 3/4; object-fit: cover; object-position: center top;
+            display: block; max-height: 45vh;
+        }
         .game-photo-single.correct { border-color: var(--success); }
         .game-photo-single.wrong { border-color: var(--error); animation: shake 0.4s; }
 
@@ -161,7 +169,10 @@
             background: var(--surface); border-radius: 20px; padding: 24px;
             box-shadow: var(--shadow); text-align: center; max-width: 320px; margin: 0 auto;
         }
-        .training-card img { width: 160px; height: 160px; object-fit: cover; border-radius: 16px; margin-bottom: 16px; }
+        .training-card img {
+            width: 160px; aspect-ratio: 3/4; object-fit: cover; object-position: center top;
+            border-radius: 16px; margin-bottom: 16px;
+        }
         .training-card .training-word { font-size: 22px; font-weight: 800; margin-bottom: 20px; color: var(--text); }
         .training-buttons { display: flex; gap: 12px; justify-content: center; }
         .training-btn {
@@ -211,9 +222,8 @@
         .saved-badge.show { opacity: 1; }
 
         @media (max-width: 360px) {
-            .photo-card img, .add-btn { height: 100px; }
-            .game-photo-single img { max-height: 220px; }
-            .training-card img { width: 130px; height: 130px; }
+            .training-card img { width: 130px; }
+            .game-photo-single { max-width: 240px; }
         }
     </style>
 </head>
@@ -305,14 +315,12 @@
         const tg = window.Telegram.WebApp;
         tg.ready(); tg.expand();
 
-        // ====== DB NAMES ======
         const OLD_DB_NAME = 'AssociationsGame';
         const NEW_DB_NAME = 'AssociationsGame_v3';
         const DB_VERSION = 1;
         const STORE_PHOTOS = 'photos';
         const STORE_META = 'meta';
 
-        // ====== MIGRATION ======
         async function migrateFromOldDB() {
             return new Promise((resolve) => {
                 try {
@@ -323,7 +331,6 @@
                         let migratedPhotos = [];
                         let migratedMeta = null;
 
-                        // Migrate photos
                         if (oldDB.objectStoreNames.contains(STORE_PHOTOS)) {
                             const tx = oldDB.transaction(STORE_PHOTOS, 'readonly');
                             const data = await new Promise((res) => {
@@ -338,7 +345,6 @@
                             }
                         }
 
-                        // Migrate meta (streak)
                         if (oldDB.objectStoreNames.contains(STORE_META)) {
                             const tx = oldDB.transaction(STORE_META, 'readonly');
                             const data = await new Promise((res) => {
@@ -354,6 +360,10 @@
                         }
 
                         oldDB.close();
+                        // DELETE OLD DB after successful migration
+                        if (migratedPhotos.length > 0 || migratedMeta) {
+                            indexedDB.deleteDatabase(OLD_DB_NAME);
+                        }
                         resolve({ photos: migratedPhotos, meta: migratedMeta });
                     };
                     req.onerror = () => resolve({ photos: [], meta: null });
@@ -413,7 +423,6 @@
             await db.transaction(STORE_PHOTOS, 'readwrite').objectStore(STORE_PHOTOS).clear();
         }
 
-        // ====== STATE ======
         let photos = [];
         let streak = { count: 0, lastWinDate: null };
         let saveTimer = null;
@@ -427,28 +436,33 @@
             'Энергия': ['энергичный', 'активный', 'целеустремлённый', 'продуктивный', 'динамичный', 'воодушевлённый']
         };
 
-        // ====== INIT ======
         async function init() {
-            // Try migration first
-            const migrated = await migrateFromOldDB();
-            if (migrated.photos.length > 0) {
-                photos = migrated.photos;
-                await savePhotos(); // Ensure in new DB
-            } else {
-                photos = await loadPhotos() || [];
+            let existingPhotos = await loadPhotos() || [];
+            let existingMeta = await loadMeta('streak', null);
+
+            if (existingPhotos.length === 0 && !existingMeta) {
+                const migrated = await migrateFromOldDB();
+                if (migrated.photos.length > 0) {
+                    photos = migrated.photos;
+                    await savePhotos();
+                }
+                if (migrated.meta) {
+                    const streakItem = migrated.meta.find(m => m.key === 'streak');
+                    if (streakItem) {
+                        streak = JSON.parse(streakItem.value);
+                        await saveMeta('streak', streak);
+                    }
+                }
             }
-            if (migrated.meta) {
-                const streakItem = migrated.meta.find(m => m.key === 'streak');
-                if (streakItem) streak = JSON.parse(streakItem.value);
-            } else {
-                streak = await loadMeta('streak', { count: 0, lastWinDate: null });
-            }
+
+            photos = await loadPhotos() || [];
+            streak = await loadMeta('streak', { count: 0, lastWinDate: null });
+
             checkStreak();
             renderPhotos();
             renderWordBank();
         }
 
-        // ====== STREAK ======
         function getToday() { return new Date().toISOString().split('T')[0]; }
         function getYesterday() { return new Date(Date.now() - 86400000).toISOString().split('T')[0]; }
 
@@ -469,7 +483,7 @@
         async function onWin() {
             const today = getToday();
             const yesterday = getYesterday();
-            if (streak.lastWinDate === today) { /* уже засчитано */ }
+            if (streak.lastWinDate === today) { }
             else if (streak.lastWinDate === yesterday) streak.count++;
             else streak.count = 1;
             streak.lastWinDate = today;
@@ -477,13 +491,11 @@
             renderStreak();
         }
 
-        // ====== TABS ======
         function switchTab(tab) {
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
             document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
         }
 
-        // ====== PHOTOS ======
         function handleFiles(files) {
             const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
             let done = 0;
@@ -555,7 +567,6 @@
             setTimeout(() => b.classList.remove('show'), 1500);
         }
 
-        // ====== WORD BANK ======
         function renderWordBank() {
             const container = document.getElementById('wordBank');
             container.innerHTML = '';
@@ -589,13 +600,22 @@
             setTimeout(() => t.classList.remove('show'), 2500);
         }
 
-        // ====== GAME - 1 PHOTO + 4 WORDS ======
         function startGame() {
             if (photos.length < 4) return;
             const totalRounds = photos.length + 5;
             game.rounds = [];
+            let lastPhotoId = null;
+
             for (let i = 0; i < totalRounds; i++) {
-                const target = photos[Math.floor(Math.random() * photos.length)];
+                let target;
+                if (photos.length > 1 && lastPhotoId !== null) {
+                    const available = photos.filter(p => p.id !== lastPhotoId);
+                    target = available[Math.floor(Math.random() * available.length)];
+                } else {
+                    target = photos[Math.floor(Math.random() * photos.length)];
+                }
+                lastPhotoId = target.id;
+
                 const otherWords = photos.filter(p => p.id !== target.id).map(p => p.word);
                 const distractors = [];
                 while (distractors.length < 3 && otherWords.length > 0) {
@@ -732,7 +752,6 @@
             switchTab('home');
         }
 
-        // ====== TRAINING ======
         function startTraining() {
             if (photos.length === 0) { showToast('Сначала добавь фото на главной'); return; }
             training.current = 0;
@@ -775,7 +794,6 @@
             showTrainingItem();
         }
 
-        // ====== CONFETTI ======
         function launchConfetti() {
             const colors = ['#2481cc', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c'];
             for (let i = 0; i < 60; i++) {
@@ -792,7 +810,6 @@
             }
         }
 
-        // ====== START ======
         init();
     </script>
 </body>
