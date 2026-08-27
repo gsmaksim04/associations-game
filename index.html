@@ -46,7 +46,7 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
 
-        /* PHOTO GRID - adaptive, no crop */
+        /* PHOTO GRID */
         .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 16px; }
         .photo-card {
             background: var(--surface); border-radius: 16px; overflow: hidden;
@@ -54,13 +54,15 @@
         }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
         .photo-card img {
-            width: 100%; height: auto; display: block;
-            background: #f0f0f0;
+            width: 100%; height: auto; display: block; background: #f0f0f0;
         }
         .photo-card .word-input {
-            width: 100%; border: none; padding: 12px; font-size: 15px;
+            width: 100%; border: none; padding: 10px; font-size: 14px;
             text-align: center; font-weight: 600; outline: none; background: transparent;
+            border-bottom: 1px solid var(--border);
         }
+        .photo-card .word-input:last-child { border-bottom: none; }
+        .photo-card .word-input.prefix-input { font-size: 13px; color: var(--primary); }
         .photo-card .word-input::placeholder { color: #bbb; }
         .photo-card .delete-btn {
             position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,0.5);
@@ -68,7 +70,6 @@
             cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
         }
 
-        /* ADD BUTTON - real button style */
         .add-btn {
             width: 100%; padding: 14px 20px; border: 2px solid var(--primary); border-radius: 14px;
             background: rgba(36, 129, 204, 0.08); display: flex; flex-direction: row;
@@ -100,9 +101,15 @@
         }
         .counter.ready { background: var(--success); }
 
+        /* GAME SCREEN */
         .game-screen { display: none; }
-        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-top: 4px; }
-        .game-header h2 { font-size: 18px; }
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-top: 4px; position: relative; }
+        .game-header h2 { font-size: 18px; flex: 1; text-align: center; }
+        .back-btn {
+            background: none; border: none; font-size: 22px; cursor: pointer;
+            color: var(--text-secondary); padding: 4px 8px; line-height: 1;
+        }
+        .back-btn:active { color: var(--error); }
         .round-badge { background: var(--primary); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
 
         .timer-bar { width: 100%; height: 6px; background: #eee; border-radius: 3px; margin-bottom: 14px; overflow: hidden; }
@@ -116,23 +123,23 @@
         .progress-dot.done { background: var(--success); }
         .progress-dot.retry { background: var(--warning); }
 
-        .hint { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 14px; min-height: 20px; font-weight: 500; }
+        .hint { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 12px; min-height: 20px; font-weight: 500; }
 
-        /* GAME PHOTO - adaptive, no crop, bigger */
-        .game-photo-single {
-            background: var(--surface); border-radius: 20px; overflow: hidden;
-            box-shadow: var(--shadow); margin-bottom: 20px; text-align: center;
-            border: 3px solid transparent; transition: all 0.3s;
-            max-width: 320px; margin-left: auto; margin-right: auto;
+        /* GAME PHOTO - no stretch */
+        .game-photo-wrap {
+            text-align: center; margin-bottom: 12px;
         }
-        .game-photo-single img {
-            width: 100%; height: auto; display: block;
-            max-height: 55vh; background: #f0f0f0;
+        .game-photo-wrap img {
+            max-width: 100%; width: auto; height: auto;
+            max-height: 42vh; display: inline-block;
+            border-radius: 16px; box-shadow: var(--shadow);
+            background: #f0f0f0;
         }
-        .game-photo-single.correct { border-color: var(--success); }
-        .game-photo-single.wrong { border-color: var(--error); animation: shake 0.4s; }
-
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+        .photo-prefix {
+            text-align: center; font-size: 28px; font-weight: 800;
+            color: var(--primary); margin-bottom: 16px;
+            letter-spacing: 1px;
+        }
 
         .words-title { text-align: center; color: var(--text-secondary); font-size: 13px; margin-bottom: 10px; font-weight: 600; }
         .words-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -171,10 +178,11 @@
             box-shadow: var(--shadow); text-align: center; max-width: 320px; margin: 0 auto;
         }
         .training-card img {
-            width: 200px; height: auto; display: block; margin: 0 auto 16px;
+            max-width: 100%; width: auto; height: auto;
+            max-height: 40vh; display: inline-block;
             border-radius: 16px; background: #f0f0f0;
         }
-        .training-card .training-word { font-size: 22px; font-weight: 800; margin-bottom: 20px; color: var(--text); }
+        .training-card .training-word { font-size: 22px; font-weight: 800; margin: 16px 0 20px; color: var(--text); }
         .training-buttons { display: flex; gap: 12px; justify-content: center; }
         .training-btn {
             width: 64px; height: 64px; border-radius: 50%; border: none;
@@ -284,15 +292,17 @@
 
         <div class="game-screen" id="gameScreen">
             <div class="game-header">
+                <button class="back-btn" onclick="exitGame()">✕</button>
                 <h2>Найди слово</h2>
                 <div class="round-badge" id="roundBadge">Раунд 1</div>
             </div>
             <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
             <div class="progress-bar" id="progressBar"></div>
-            <div class="hint" id="hint">Какое слово подходит к этому фото?</div>
-            <div class="game-photo-single" id="gamePhotoSingle">
+            <div class="hint" id="hint">Какое слово подходит?</div>
+            <div class="game-photo-wrap" id="gamePhotoWrap">
                 <img id="gameImg" src="" alt="">
             </div>
+            <div class="photo-prefix" id="photoPrefix">Я</div>
             <div class="words-title">Выбери слово:</div>
             <div class="words-grid" id="wordsGrid"></div>
         </div>
@@ -338,7 +348,11 @@
                             });
                             if (data && data.length > 0) {
                                 const newTx = newDB.transaction(STORE_PHOTOS, 'readwrite');
-                                for (const item of data) await newTx.objectStore(STORE_PHOTOS).put(item);
+                                for (const item of data) {
+                                    // Add default prefix for old data
+                                    if (!item.prefix) item.prefix = 'Я';
+                                    await newTx.objectStore(STORE_PHOTOS).put(item);
+                                }
                                 migratedPhotos = data;
                             }
                         }
@@ -453,6 +467,8 @@
             }
 
             photos = await loadPhotos() || [];
+            // Ensure all photos have prefix
+            photos.forEach(p => { if (!p.prefix) p.prefix = 'Я'; });
             streak = await loadMeta('streak', { count: 0, lastWinDate: null });
 
             checkStreak();
@@ -499,7 +515,7 @@
             arr.forEach(file => {
                 const r = new FileReader();
                 r.onload = e => {
-                    photos.push({ id: Date.now() + Math.random(), dataUrl: e.target.result, word: '' });
+                    photos.push({ id: Date.now() + Math.random(), dataUrl: e.target.result, word: '', prefix: 'Я' });
                     done++; if (done === arr.length) { renderPhotos(); scheduleSave(); }
                 };
                 r.readAsDataURL(file);
@@ -520,7 +536,8 @@
                 card.className = 'photo-card';
                 card.innerHTML = `
                     <img src="${p.dataUrl}" alt="">
-                    <input type="text" class="word-input" placeholder="Введи слово..." value="${esc(p.word)}" oninput="updateWord(${i}, this.value)">
+                    <input type="text" class="word-input" placeholder="Слово..." value="${esc(p.word)}" oninput="updateWord(${i}, this.value)">
+                    <input type="text" class="word-input prefix-input" placeholder="Подсказка (Я)..." value="${esc(p.prefix || 'Я')}" oninput="updatePrefix(${i}, this.value)">
                     <button class="delete-btn" onclick="deletePhoto(${i})">×</button>
                 `;
                 grid.appendChild(card);
@@ -535,6 +552,11 @@
         function updateWord(i, val) {
             photos[i].word = val.trim();
             document.getElementById('startBtn').disabled = !(photos.length >= 4 && photos.every(p => p.word.length > 0));
+            scheduleSave();
+        }
+
+        function updatePrefix(i, val) {
+            photos[i].prefix = val.trim();
             scheduleSave();
         }
 
@@ -597,6 +619,13 @@
             setTimeout(() => t.classList.remove('show'), 2500);
         }
 
+        function exitGame() {
+            clearInterval(game.timer);
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('setupScreen').style.display = 'block';
+            switchTab('home');
+        }
+
         function startGame() {
             if (photos.length < 4) return;
             const totalRounds = photos.length + 5;
@@ -638,12 +667,11 @@
             const r = game.rounds[game.current];
             document.getElementById('roundBadge').textContent = `Раунд ${game.current + 1} / ${game.rounds.length}`;
             renderProgress();
-            document.getElementById('hint').textContent = 'Какое слово подходит к этому фото?';
+            document.getElementById('hint').textContent = 'Какое слово подходит?';
             document.getElementById('hint').style.color = 'var(--text-secondary)';
 
-            const photoEl = document.getElementById('gamePhotoSingle');
-            photoEl.className = 'game-photo-single';
             document.getElementById('gameImg').src = r.target.dataUrl;
+            document.getElementById('photoPrefix').textContent = r.target.prefix || 'Я';
 
             const wg = document.getElementById('wordsGrid');
             wg.innerHTML = '';
@@ -704,19 +732,16 @@
 
             const round = game.rounds[game.current];
             const isCorrect = word === round.target.word;
-            const photoEl = document.getElementById('gamePhotoSingle');
 
             document.querySelectorAll('.word-btn').forEach(b => b.disabled = true);
 
             if (isCorrect) {
-                photoEl.classList.add('correct');
                 btnEl.classList.add('correct');
-                document.getElementById('hint').textContent = '✅ Правильно!';
+                document.getElementById('hint').textContent = `✅ ${round.target.prefix || 'Я'} ${word}!`;
                 document.getElementById('hint').style.color = 'var(--success)';
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                setTimeout(() => { game.current++; startRound(); }, 700);
+                setTimeout(() => { game.current++; startRound(); }, 900);
             } else {
-                photoEl.classList.add('wrong');
                 btnEl.classList.add('wrong');
                 document.getElementById('hint').textContent = '❌ Неправильно. Раунд повторится позже';
                 document.getElementById('hint').style.color = 'var(--error)';
