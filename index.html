@@ -32,10 +32,9 @@
         .photo-card .img-wrap img{width:100%;height:100%;object-fit:cover;display:block}
         .photo-card .delete-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;z-index:2}
 
-        .input-group{display:flex;margin:10px;border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--bg)}
-        .input-group input{flex:1;border:none;padding:10px 8px;font-size:14px;font-weight:600;text-align:center;outline:none;background:transparent;color:var(--text)}
-        .input-group input:first-child{border-right:1px solid var(--border)}
-        .input-group input:last-child{flex:0 0 70px;background:rgba(36,129,204,.1);color:var(--primary);font-weight:700;font-size:15px;letter-spacing:.5px}
+        .photo-card .word-input{width:100%;border:none;padding:10px 8px;font-size:14px;text-align:center;font-weight:600;outline:none;background:transparent;border-top:1px solid var(--border);color:var(--text)}
+        .photo-card .word-input::placeholder{color:#bbb;font-weight:500}
+        .photo-card .prefix-input{color:var(--primary);background:rgba(36,129,204,.06);font-size:13px;font-weight:700;letter-spacing:.5px}
 
         .add-btn{width:100%;padding:14px 20px;border:2px solid var(--primary);border-radius:14px;background:rgba(36,129,204,.08);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;color:var(--primary);gap:8px;font-size:15px;font-weight:700;margin-bottom:16px}
         .add-btn:active{transform:scale(.98);background:var(--primary);color:#fff}
@@ -132,7 +131,7 @@
                 <div class="streak-badge" id="streakBadge">🔥 0</div>
                 <h1>🧠 Ассоциации</h1>
                 <p>Загрузи фото и придумай к ним слова</p>
-                <div class="version">v0.1</div>
+                <div class="version">v0.2</div>
                 <div class="saved-badge" id="savedBadge">✅ Сохранено</div>
                 <div class="counter" id="counter">Добавлено: 0/4</div>
             </div>
@@ -234,7 +233,7 @@
         function handleFiles(files){const arr=Array.from(files).filter(f=>f.type.startsWith('image/'));let done=0;arr.forEach(file=>{const r=new FileReader();r.onload=e=>{photos.push({id:Date.now()+Math.random(),dataUrl:e.target.result,word:'',prefix:'Я'});done++;if(done===arr.length){renderPhotos();scheduleSave()}};r.readAsDataURL(file)});document.getElementById('fileInput').value=''}
         function scheduleSave(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(()=>savePhotos(),600)}
         function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
-        function renderPhotos(){const g=document.getElementById('photoGrid');g.innerHTML='';photos.forEach((p,i)=>{const c=document.createElement('div');c.className='photo-card';c.innerHTML=`<button class="delete-btn" onclick="deletePhoto(${i})">×</button><div class="img-wrap"><img src="${p.dataUrl}" alt=""></div><div class="input-group"><input placeholder="Слово..." value="${esc(p.word)}" oninput="updateWord(${i},this.value)"><input placeholder="Я" value="${esc(p.prefix||'Я')}" oninput="updatePrefix(${i},this.value)"></div>`;g.appendChild(c)});const c=document.getElementById('counter');c.textContent='Добавлено: '+photos.length+'/4';c.classList.toggle('ready',photos.length>=4);document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0));document.getElementById('resetBtn').style.display=photos.length>0?'block':'none'}
+        function renderPhotos(){const g=document.getElementById('photoGrid');g.innerHTML='';photos.forEach((p,i)=>{const c=document.createElement('div');c.className='photo-card';c.innerHTML=`<button class="delete-btn" onclick="deletePhoto(${i})">×</button><div class="img-wrap"><img src="${p.dataUrl}" alt=""></div><input type="text" class="word-input" placeholder="Слово..." value="${esc(p.word)}" oninput="updateWord(${i},this.value)"><input type="text" class="word-input prefix-input" placeholder="Подсказка (Я)..." value="${esc(p.prefix||'Я')}" oninput="updatePrefix(${i},this.value)">`;g.appendChild(c)});const c=document.getElementById('counter');c.textContent='Добавлено: '+photos.length+'/4';c.classList.toggle('ready',photos.length>=4);document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0));document.getElementById('resetBtn').style.display=photos.length>0?'block':'none'}
         function updateWord(i,v){photos[i].word=v.trim();document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0));scheduleSave()}
         function updatePrefix(i,v){photos[i].prefix=v.trim();scheduleSave()}
         function deletePhoto(i){photos.splice(i,1);renderPhotos();scheduleSave()}
