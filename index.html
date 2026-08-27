@@ -10,28 +10,53 @@
         :root {
             --bg: #f5f5f5; --surface: #ffffff; --primary: #2481cc; --primary-dark: #1a6cb3;
             --text: #000000; --text-secondary: #707579; --border: #dfe1e5;
-            --error: #e74c3c; --success: #2ecc71; --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --error: #e74c3c; --success: #2ecc71; --warning: #f39c12;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden;
         }
-        .container { max-width: 480px; margin: 0 auto; padding: 16px; min-height: 100vh; }
-        .header { text-align: center; margin-bottom: 20px; padding-top: 8px; }
-        .header h1 { font-size: 26px; font-weight: 800; margin-bottom: 6px; }
-        .header p { color: var(--text-secondary); font-size: 14px; }
-        .counter {
-            display: inline-block; background: var(--primary); color: white;
-            padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-top: 8px;
+        .container { max-width: 480px; margin: 0 auto; padding: 16px; min-height: 100vh; position: relative; }
+
+        /* Header */
+        .header { text-align: center; margin-bottom: 16px; padding-top: 8px; position: relative; }
+        .header h1 { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+        .header p { color: var(--text-secondary); font-size: 13px; }
+        .streak-badge {
+            position: absolute; top: 0; right: 0;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white; padding: 4px 10px; border-radius: 20px;
+            font-size: 12px; font-weight: 700; box-shadow: 0 2px 6px rgba(238,90,36,0.3);
+            display: none;
         }
-        .counter.ready { background: var(--success); }
+        .streak-badge.active { display: block; }
+
+        /* Nav Tabs */
+        .nav-tabs {
+            display: flex; gap: 8px; margin-bottom: 16px;
+            background: var(--surface); padding: 4px;
+            border-radius: 14px; box-shadow: var(--shadow);
+        }
+        .nav-tab {
+            flex: 1; padding: 10px; border: none; border-radius: 10px;
+            background: transparent; color: var(--text-secondary);
+            font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .nav-tab.active { background: var(--primary); color: white; }
+
+        /* Tab content */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+
+        /* Photo Grid */
         .photo-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
         .photo-card {
             background: var(--surface); border-radius: 16px; overflow: hidden;
             box-shadow: var(--shadow); position: relative; animation: fadeIn 0.3s ease;
         }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
-        .photo-card img { width: 100%; height: 130px; object-fit: cover; display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .photo-card img { width: 100%; height: 120px; object-fit: cover; display: block; }
         .photo-card .word-input {
             width: 100%; border: none; padding: 10px; font-size: 14px;
             text-align: center; font-weight: 600; outline: none; background: transparent;
@@ -39,18 +64,20 @@
         .photo-card .word-input::placeholder { color: #bbb; }
         .photo-card .delete-btn {
             position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,0.5);
-            color: white; border: none; width: 28px; height: 28px; border-radius: 50%;
-            cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+            color: white; border: none; width: 26px; height: 26px; border-radius: 50%;
+            cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center;
         }
+
         .add-btn {
-            width: 100%; height: 130px; border: 2px dashed var(--border); border-radius: 16px;
+            width: 100%; height: 120px; border: 2px dashed var(--border); border-radius: 16px;
             background: var(--surface); display: flex; flex-direction: column;
             align-items: center; justify-content: center; cursor: pointer;
             transition: all 0.2s; color: var(--text-secondary); margin-bottom: 12px;
         }
         .add-btn:active { transform: scale(0.96); border-color: var(--primary); color: var(--primary); }
-        .add-btn .icon { font-size: 32px; margin-bottom: 4px; }
+        .add-btn .icon { font-size: 28px; margin-bottom: 4px; }
         .add-btn .label { font-size: 13px; font-weight: 500; }
+
         .start-btn {
             width: 100%; padding: 16px; background: var(--primary); color: white; border: none;
             border-radius: 14px; font-size: 17px; font-weight: 700; cursor: pointer;
@@ -58,33 +85,53 @@
         }
         .start-btn:disabled { background: #b0b0b0; box-shadow: none; cursor: not-allowed; }
         .start-btn:not(:disabled):active { transform: scale(0.98); background: var(--primary-dark); }
+
         .reset-btn {
             width: 100%; padding: 12px; background: transparent; color: var(--text-secondary);
             border: 1px solid var(--border); border-radius: 14px; font-size: 14px;
-            font-weight: 600; cursor: pointer; margin-bottom: 20px;
+            font-weight: 600; cursor: pointer;
         }
         .reset-btn:active { background: rgba(0,0,0,0.03); }
+
+        .counter {
+            display: inline-block; background: var(--primary); color: white;
+            padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 12px;
+        }
+        .counter.ready { background: var(--success); }
+
+        /* Game Screen */
         .game-screen { display: none; }
-        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-top: 8px; }
-        .game-header h2 { font-size: 20px; }
-        .round-badge { background: var(--primary); color: white; padding: 6px 14px; border-radius: 20px; font-size: 14px; font-weight: 700; }
-        .progress-bar { display: flex; gap: 6px; margin-bottom: 16px; justify-content: center; }
-        .progress-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
-        .progress-dot.active { background: var(--primary); transform: scale(1.2); }
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-top: 4px; }
+        .game-header h2 { font-size: 18px; }
+        .round-badge { background: var(--primary); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+
+        .timer-bar { width: 100%; height: 6px; background: #eee; border-radius: 3px; margin-bottom: 14px; overflow: hidden; }
+        .timer-fill { height: 100%; background: var(--primary); border-radius: 3px; width: 100%; transition: width 0.1s linear; }
+        .timer-fill.warning { background: var(--warning); }
+        .timer-fill.danger { background: var(--error); }
+
+        .progress-bar { display: flex; gap: 6px; margin-bottom: 14px; justify-content: center; flex-wrap: wrap; }
+        .progress-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+        .progress-dot.active { background: var(--primary); transform: scale(1.3); }
         .progress-dot.done { background: var(--success); }
-        .hint { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 14px; min-height: 20px; }
+        .progress-dot.retry { background: var(--warning); }
+
+        .hint { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 12px; min-height: 20px; font-weight: 500; }
+
         .game-photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
         .game-photo {
             background: var(--surface); border-radius: 16px; overflow: hidden;
             box-shadow: var(--shadow); cursor: pointer; transition: all 0.2s;
             border: 3px solid transparent; position: relative;
         }
-        .game-photo img { width: 100%; height: 120px; object-fit: cover; display: block; pointer-events: none; }
+        .game-photo img { width: 100%; height: 110px; object-fit: cover; display: block; pointer-events: none; }
         .game-photo.selected { border-color: var(--primary); transform: scale(1.02); box-shadow: 0 4px 16px rgba(36, 129, 204, 0.3); }
         .game-photo.correct { border-color: var(--success); }
         .game-photo.wrong { border-color: var(--error); animation: shake 0.4s; }
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
-        .words-title { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 10px; font-weight: 500; }
+
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+        .words-title { text-align: center; color: var(--text-secondary); font-size: 13px; margin-bottom: 10px; font-weight: 600; }
         .words-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .word-btn {
             background: var(--surface); border: 2px solid var(--border); border-radius: 12px;
@@ -95,6 +142,48 @@
         .word-btn.selected { border-color: var(--primary); background: rgba(36, 129, 204, 0.08); color: var(--primary); }
         .word-btn.correct { border-color: var(--success); background: rgba(46, 204, 113, 0.1); color: var(--success); }
         .word-btn.wrong { border-color: var(--error); background: rgba(231, 76, 60, 0.1); color: var(--error); }
+
+        /* Words Tab */
+        .word-bank { background: var(--surface); border-radius: 16px; padding: 16px; box-shadow: var(--shadow); }
+        .word-category { margin-bottom: 16px; }
+        .word-category h4 { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .word-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+        .word-chip {
+            background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+            padding: 8px 14px; font-size: 14px; font-weight: 600; cursor: pointer;
+            transition: all 0.15s; color: var(--text);
+        }
+        .word-chip:active { transform: scale(0.95); background: var(--primary); color: white; border-color: var(--primary); }
+
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
+            background: rgba(0,0,0,0.85); color: white; padding: 12px 20px; border-radius: 12px;
+            font-size: 14px; font-weight: 600; z-index: 3000; opacity: 0; transition: all 0.3s;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* Training Tab */
+        .training-preview { text-align: center; padding: 20px; }
+        .training-preview p { color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; line-height: 1.5; }
+        .training-card {
+            background: var(--surface); border-radius: 20px; padding: 24px;
+            box-shadow: var(--shadow); text-align: center; max-width: 320px; margin: 0 auto;
+        }
+        .training-card img { width: 160px; height: 160px; object-fit: cover; border-radius: 16px; margin-bottom: 16px; }
+        .training-card .training-word { font-size: 22px; font-weight: 800; margin-bottom: 20px; color: var(--text); }
+        .training-buttons { display: flex; gap: 12px; justify-content: center; }
+        .training-btn {
+            width: 64px; height: 64px; border-radius: 50%; border: none;
+            font-size: 28px; cursor: pointer; transition: all 0.2s; display: flex;
+            align-items: center; justify-content: center; box-shadow: var(--shadow);
+        }
+        .training-btn.yes { background: var(--success); color: white; }
+        .training-btn.no { background: var(--error); color: white; }
+        .training-btn:active { transform: scale(0.92); }
+
+        .training-progress { text-align: center; color: var(--text-secondary); font-size: 14px; margin-bottom: 16px; font-weight: 600; }
+
+        /* Modals */
         .modal-overlay {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.6); display: none; align-items: center; justify-content: center;
@@ -116,53 +205,98 @@
         }
         .modal-btn:active { transform: scale(0.98); }
         .modal-btn.primary { background: var(--primary); color: white; }
-        .modal-btn.danger { background: var(--error); color: white; }
         .modal-btn.success { background: var(--success); color: white; }
-        #fileInput { display: none; }
-        .saved-badge {
-            text-align: center; font-size: 12px; color: var(--success);
-            margin-bottom: 10px; font-weight: 600;
+
+        /* Confetti */
+        .confetti {
+            position: fixed; width: 8px; height: 8px; top: -10px;
+            border-radius: 2px; z-index: 2000; pointer-events: none;
+            animation: confettiFall 2.5s linear forwards;
         }
+        @keyframes confettiFall {
+            to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+
+        #fileInput { display: none; }
+        .saved-badge { text-align: center; font-size: 12px; color: var(--success); margin-bottom: 10px; font-weight: 600; opacity: 0; transition: opacity 0.3s; }
+        .saved-badge.show { opacity: 1; }
+
         @media (max-width: 360px) {
-            .photo-card img, .add-btn { height: 110px; }
-            .game-photo img { height: 100px; }
+            .photo-card img, .add-btn { height: 100px; }
+            .game-photo img { height: 90px; }
+            .training-card img { width: 130px; height: 130px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- SETUP SCREEN -->
+        <!-- SETUP / HOME SCREEN -->
         <div id="setupScreen">
             <div class="header">
+                <div class="streak-badge" id="streakBadge">🔥 0</div>
                 <h1>🧠 Ассоциации</h1>
                 <p>Загрузи фото и придумай к ним слова</p>
-                <div class="saved-badge" id="savedBadge" style="display:none;">✅ Данные сохранены в телефоне</div>
+                <div class="saved-badge" id="savedBadge">✅ Сохранено</div>
                 <div class="counter" id="counter">Добавлено: 0/4</div>
             </div>
 
-            <div class="photo-grid" id="photoGrid"></div>
-
-            <div class="add-btn" id="addBtn">
-                <div class="icon">➕</div>
-                <div class="label">Добавить фото</div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="home" onclick="switchTab('home')">🏠 Главная</button>
+                <button class="nav-tab" data-tab="words" onclick="switchTab('words')">💡 Слова</button>
+                <button class="nav-tab" data-tab="training" onclick="switchTab('training')">⚡ Тренировка</button>
             </div>
 
-            <input type="file" id="fileInput" accept="image/*" multiple>
+            <!-- HOME TAB -->
+            <div class="tab-content active" id="tab-home">
+                <div class="photo-grid" id="photoGrid"></div>
+                <div class="add-btn" id="addBtn" onclick="document.getElementById('fileInput').click()">
+                    <div class="icon">➕</div>
+                    <div class="label">Добавить фото</div>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
+                <button class="start-btn" id="startBtn" disabled onclick="startGame()">▶️ Начать игру</button>
+                <button class="reset-btn" id="resetBtn" style="display:none;" onclick="resetAll()">🗑 Очистить всё</button>
+            </div>
 
-            <button class="start-btn" id="startBtn" disabled>▶️ Начать игру</button>
-            <button class="reset-btn" id="resetBtn" style="display:none;">🗑 Очистить всё</button>
+            <!-- WORDS TAB -->
+            <div class="tab-content" id="tab-words">
+                <div class="word-bank" id="wordBank"></div>
+            </div>
+
+            <!-- TRAINING TAB -->
+            <div class="tab-content" id="tab-training">
+                <div id="trainingIntro" class="training-preview">
+                    <p>Быстрое кондиционирование по методу Galatea.<br>20 пар «фото + слово». Жми ✅ если это про тебя.</p>
+                    <button class="start-btn" id="trainingStartBtn" onclick="startTraining()">⚡ Начать тренировку</button>
+                </div>
+                <div id="trainingGame" style="display:none;">
+                    <div class="training-progress" id="trainingProgress">1 / 20</div>
+                    <div class="training-card">
+                        <img id="trainingImg" src="" alt="">
+                        <div class="training-word" id="trainingWord"></div>
+                        <div class="training-buttons">
+                            <button class="training-btn no" onclick="trainingAnswer(false)">❌</button>
+                            <button class="training-btn yes" onclick="trainingAnswer(true)">✅</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="trainingDone" style="display:none; text-align:center; padding:40px 20px;">
+                    <div style="font-size:48px; margin-bottom:12px;">🔥</div>
+                    <h3>Тренировка завершена!</h3>
+                    <p style="color:var(--text-secondary); margin:12px 0 20px;">Ты закрепил ассоциации. Возвращайся завтра!</p>
+                    <button class="start-btn" onclick="switchTab('home')">🏠 На главную</button>
+                </div>
+            </div>
         </div>
 
         <!-- GAME SCREEN -->
         <div class="game-screen" id="gameScreen">
             <div class="game-header">
                 <h2>Найди пару</h2>
-                <div class="round-badge" id="roundBadge">Раунд 1/5</div>
+                <div class="round-badge" id="roundBadge">Раунд 1</div>
             </div>
-            <div class="progress-bar" id="progressBar">
-                <div class="progress-dot active"></div><div class="progress-dot"></div>
-                <div class="progress-dot"></div><div class="progress-dot"></div><div class="progress-dot"></div>
-            </div>
+            <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+            <div class="progress-bar" id="progressBar"></div>
             <div class="hint" id="hint">Выбери фото, затем подходящее слово</div>
             <div class="game-photos" id="gamePhotos"></div>
             <div class="words-title">Слова:</div>
@@ -170,24 +304,28 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="modalOverlay">
-        <div class="modal" id="modal">
-            <div class="modal-icon" id="modalIcon">❌</div>
-            <h3 id="modalTitle">Ошибка!</h3>
-            <p id="modalText">Неправильная пара. Начинаем заново.</p>
-            <button class="modal-btn danger" id="modalBtn">Заново</button>
+    <!-- MODAL WIN -->
+    <div class="modal-overlay" id="winModal">
+        <div class="modal">
+            <div class="modal-icon">🎉</div>
+            <h3 id="winTitle">Победа!</h3>
+            <p id="winText">Ты прошёл все раунды!</p>
+            <button class="modal-btn success" onclick="closeWin()">Играть снова</button>
         </div>
     </div>
 
+    <div class="toast" id="toast"></div>
+
     <script>
-        // ====== TELEGRAM WEBAPP ======
+        // ====== TELEGRAM ======
         const tg = window.Telegram.WebApp;
         tg.ready(); tg.expand();
 
-        // ====== INDEXEDDB ======
-        const DB_NAME = 'AssociationsGame';
-        const DB_VERSION = 1;
-        const STORE_NAME = 'photos';
+        // ====== DB ======
+        const DB_NAME = 'AssociationsGame_v2';
+        const DB_VERSION = 2;
+        const STORE_PHOTOS = 'photos';
+        const STORE_META = 'meta';
 
         function openDB() {
             return new Promise((resolve, reject) => {
@@ -195,321 +333,440 @@
                 req.onerror = () => reject(req.error);
                 req.onsuccess = () => resolve(req.result);
                 req.onupgradeneeded = (e) => {
-                    e.target.result.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_PHOTOS)) db.createObjectStore(STORE_PHOTOS, { keyPath: 'id' });
+                    if (!db.objectStoreNames.contains(STORE_META)) db.createObjectStore(STORE_META, { keyPath: 'key' });
                 };
             });
         }
 
-        async function savePhotosToDB(photos) {
+        async function savePhotos() {
             const db = await openDB();
-            const tx = db.transaction(STORE_NAME, 'readwrite');
-            const store = tx.objectStore(STORE_NAME);
-            await store.clear();
-            for (const photo of photos) {
-                await store.put(photo);
-            }
-            showSavedBadge();
+            const tx = db.transaction(STORE_PHOTOS, 'readwrite');
+            await tx.objectStore(STORE_PHOTOS).clear();
+            for (const p of photos) await tx.objectStore(STORE_PHOTOS).put(p);
+            showSaved();
         }
 
-        async function loadPhotosFromDB() {
+        async function loadPhotos() {
             const db = await openDB();
-            const tx = db.transaction(STORE_NAME, 'readonly');
-            const store = tx.objectStore(STORE_NAME);
-            return new Promise((resolve, reject) => {
-                const req = store.getAll();
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => reject(req.error);
+            const tx = db.transaction(STORE_PHOTOS, 'readonly');
+            return new Promise((res, rej) => {
+                const r = tx.objectStore(STORE_PHOTOS).getAll();
+                r.onsuccess = () => res(r.result);
+                r.onerror = () => rej(r.error);
             });
         }
 
-        async function clearDB() {
+        async function saveMeta(key, value) {
             const db = await openDB();
-            const tx = db.transaction(STORE_NAME, 'readwrite');
-            await tx.objectStore(STORE_NAME).clear();
+            const tx = db.transaction(STORE_META, 'readwrite');
+            await tx.objectStore(STORE_META).put({ key, value: JSON.stringify(value) });
         }
 
-        function showSavedBadge() {
-            const badge = document.getElementById('savedBadge');
-            badge.style.display = 'block';
-            setTimeout(() => badge.style.display = 'none', 2000);
+        async function loadMeta(key, defaultVal) {
+            const db = await openDB();
+            const tx = db.transaction(STORE_META, 'readonly');
+            return new Promise((res) => {
+                const r = tx.objectStore(STORE_META).get(key);
+                r.onsuccess = () => res(r.result ? JSON.parse(r.result.value) : defaultVal);
+                r.onerror = () => res(defaultVal);
+            });
+        }
+
+        async function clearPhotos() {
+            const db = await openDB();
+            await db.transaction(STORE_PHOTOS, 'readwrite').objectStore(STORE_PHOTOS).clear();
         }
 
         // ====== STATE ======
         let photos = [];
-        let saveTimeout = null;
-        let gameState = { round: 1, selectedPhoto: null, selectedWord: null, currentRoundData: null, isProcessing: false };
+        let streak = { count: 0, lastWinDate: null };
+        let saveTimer = null;
+        let game = { rounds: [], current: 0, selectedPhoto: null, selectedWord: null, processing: false, timer: null, timeLeft: 0, maxTime: 12 };
+        let training = { items: [], current: 0, total: 20 };
 
-        // ====== DOM ======
-        const setupScreen = document.getElementById('setupScreen');
-        const gameScreen = document.getElementById('gameScreen');
-        const photoGrid = document.getElementById('photoGrid');
-        const addBtn = document.getElementById('addBtn');
-        const fileInput = document.getElementById('fileInput');
-        const startBtn = document.getElementById('startBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const counter = document.getElementById('counter');
-        const gamePhotos = document.getElementById('gamePhotos');
-        const wordsGrid = document.getElementById('wordsGrid');
-        const roundBadge = document.getElementById('roundBadge');
-        const progressBar = document.getElementById('progressBar');
-        const hint = document.getElementById('hint');
-        const modalOverlay = document.getElementById('modalOverlay');
-        const modalIcon = document.getElementById('modalIcon');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalText = document.getElementById('modalText');
-        const modalBtn = document.getElementById('modalBtn');
+        const wordBank = {
+            'Followership': ['инициативный', 'преданный', 'ответственный', 'командный', 'надёжный', 'лояльный', 'послушный', 'исполнительный'],
+            'Уверенность': ['сильный', 'уверенный', 'смелый', 'решительный', 'достойный', 'неповторимый', 'харизматичный'],
+            'Спокойствие': ['спокойный', 'уравновешенный', 'мудрый', 'терпеливый', 'внимательный', 'осознанный'],
+            'Энергия': ['энергичный', 'активный', 'целеустремлённый', 'продуктивный', 'динамичный', 'воодушевлённый']
+        };
 
-        // ====== SETUP ======
-        addBtn.addEventListener('click', () => fileInput.click());
-
-        fileInput.addEventListener('change', (e) => {
-            const files = Array.from(e.target.files);
-            let loaded = 0;
-            files.forEach(file => {
-                if (!file.type.startsWith('image/')) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    photos.push({ id: Date.now() + Math.random(), dataUrl: ev.target.result, word: '' });
-                    loaded++;
-                    if (loaded === files.filter(f => f.type.startsWith('image/')).length) {
-                        renderSetup();
-                        scheduleSave();
-                    }
-                };
-                reader.readAsDataURL(file);
-            });
-            fileInput.value = '';
-        });
-
-        function scheduleSave() {
-            if (saveTimeout) clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(() => savePhotosToDB(photos), 500);
+        // ====== INIT ======
+        async function init() {
+            photos = await loadPhotos() || [];
+            streak = await loadMeta('streak', { count: 0, lastWinDate: null });
+            checkStreak();
+            renderPhotos();
+            renderWordBank();
         }
 
-        function renderSetup() {
-            photoGrid.innerHTML = '';
-            photos.forEach((photo, index) => {
+        // ====== STREAK ======
+        function getToday() { return new Date().toISOString().split('T')[0]; }
+        function getYesterday() { return new Date(Date.now() - 86400000).toISOString().split('T')[0]; }
+
+        function checkStreak() {
+            const today = getToday();
+            const yesterday = getYesterday();
+            if (!streak.lastWinDate) streak.count = 0;
+            else if (streak.lastWinDate !== today && streak.lastWinDate !== yesterday) streak.count = 0;
+            renderStreak();
+        }
+
+        function renderStreak() {
+            const el = document.getElementById('streakBadge');
+            if (streak.count > 0) { el.textContent = `🔥 ${streak.count}`; el.classList.add('active'); }
+            else el.classList.remove('active');
+        }
+
+        async function onWin() {
+            const today = getToday();
+            const yesterday = getYesterday();
+            if (streak.lastWinDate === today) { /* уже засчитано */ }
+            else if (streak.lastWinDate === yesterday) streak.count++;
+            else streak.count = 1;
+            streak.lastWinDate = today;
+            await saveMeta('streak', streak);
+            renderStreak();
+        }
+
+        // ====== TABS ======
+        function switchTab(tab) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
+        }
+
+        // ====== PHOTOS ======
+        function handleFiles(files) {
+            const arr = Array.from(files).filter(f => f.type.startsWith('image/'));
+            let done = 0;
+            arr.forEach(file => {
+                const r = new FileReader();
+                r.onload = e => {
+                    photos.push({ id: Date.now() + Math.random(), dataUrl: e.target.result, word: '' });
+                    done++; if (done === arr.length) { renderPhotos(); scheduleSave(); }
+                };
+                r.readAsDataURL(file);
+            });
+            document.getElementById('fileInput').value = '';
+        }
+
+        function scheduleSave() {
+            if (saveTimer) clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => savePhotos(), 600);
+        }
+
+        function renderPhotos() {
+            const grid = document.getElementById('photoGrid');
+            grid.innerHTML = '';
+            photos.forEach((p, i) => {
                 const card = document.createElement('div');
                 card.className = 'photo-card';
                 card.innerHTML = `
-                    <img src="${photo.dataUrl}" alt="Photo">
-                    <input type="text" class="word-input" placeholder="Введи слово..." 
-                           value="${escapeHtml(photo.word)}" data-index="${index}">
-                    <button class="delete-btn" data-index="${index}">×</button>
+                    <img src="${p.dataUrl}" alt="">
+                    <input type="text" class="word-input" placeholder="Введи слово..." value="${esc(p.word)}" oninput="updateWord(${i}, this.value)">
+                    <button class="delete-btn" onclick="deletePhoto(${i})">×</button>
                 `;
-                photoGrid.appendChild(card);
+                grid.appendChild(card);
             });
+            const c = document.getElementById('counter');
+            c.textContent = `Добавлено: ${photos.length}/4`;
+            c.classList.toggle('ready', photos.length >= 4);
+            document.getElementById('startBtn').disabled = !(photos.length >= 4 && photos.every(p => p.word.length > 0));
+            document.getElementById('resetBtn').style.display = photos.length > 0 ? 'block' : 'none';
+        }
 
-            document.querySelectorAll('.word-input').forEach(input => {
-                input.addEventListener('input', (e) => {
-                    const idx = parseInt(e.target.dataset.index);
-                    photos[idx].word = e.target.value.trim();
-                    checkReady();
-                    scheduleSave();
+        function updateWord(i, val) {
+            photos[i].word = val.trim();
+            document.getElementById('startBtn').disabled = !(photos.length >= 4 && photos.every(p => p.word.length > 0));
+            scheduleSave();
+        }
+
+        function deletePhoto(i) {
+            photos.splice(i, 1);
+            renderPhotos();
+            scheduleSave();
+        }
+
+        async function resetAll() {
+            if (!confirm('Удалить все фото, слова и стрик?')) return;
+            photos = []; streak = { count: 0, lastWinDate: null };
+            await clearPhotos();
+            await saveMeta('streak', streak);
+            renderPhotos(); renderStreak();
+        }
+
+        function esc(t) {
+            const d = document.createElement('div');
+            d.textContent = t;
+            return d.innerHTML;
+        }
+
+        function showSaved() {
+            const b = document.getElementById('savedBadge');
+            b.classList.add('show');
+            setTimeout(() => b.classList.remove('show'), 1500);
+        }
+
+        // ====== WORD BANK ======
+        function renderWordBank() {
+            const container = document.getElementById('wordBank');
+            container.innerHTML = '';
+            for (const [cat, words] of Object.entries(wordBank)) {
+                const div = document.createElement('div');
+                div.className = 'word-category';
+                div.innerHTML = `<h4>${cat}</h4>`;
+                const chips = document.createElement('div');
+                chips.className = 'word-chips';
+                words.forEach(w => {
+                    const chip = document.createElement('button');
+                    chip.className = 'word-chip';
+                    chip.textContent = w;
+                    chip.onclick = () => copyWord(w);
+                    chips.appendChild(chip);
                 });
-            });
-
-            document.querySelectorAll('.delete-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const idx = parseInt(e.target.dataset.index);
-                    photos.splice(idx, 1);
-                    renderSetup();
-                    checkReady();
-                    scheduleSave();
-                });
-            });
-
-            counter.textContent = `Добавлено: ${photos.length}/4`;
-            counter.classList.toggle('ready', photos.length >= 4);
-            checkReady();
-        }
-
-        function checkReady() {
-            const hasMinPhotos = photos.length >= 4;
-            const allHaveWords = photos.every(p => p.word.length > 0);
-            startBtn.disabled = !(hasMinPhotos && allHaveWords);
-            resetBtn.style.display = photos.length > 0 ? 'block' : 'none';
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        resetBtn.addEventListener('click', async () => {
-            if (!confirm('Удалить все фото и слова?')) return;
-            photos = [];
-            await clearDB();
-            renderSetup();
-        });
-
-        // ====== LOAD ON START ======
-        async function init() {
-            const saved = await loadPhotosFromDB();
-            if (saved && saved.length > 0) {
-                photos = saved;
-                renderSetup();
+                div.appendChild(chips);
+                container.appendChild(div);
             }
         }
 
-        // ====== GAME ======
-        startBtn.addEventListener('click', startGame);
+        function copyWord(w) {
+            if (navigator.clipboard) navigator.clipboard.writeText(w);
+            showToast(`Скопировано: «${w}» — вставь в поле слова`);
+        }
 
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        // ====== GAME ======
         function startGame() {
             if (photos.length < 4) return;
-            gameState.round = 1;
-            gameState.isProcessing = false;
-            setupScreen.style.display = 'none';
-            gameScreen.style.display = 'block';
+            const totalRounds = photos.length + 5;
+            game.rounds = [];
+            for (let i = 0; i < totalRounds; i++) {
+                const shuffled = [...photos].sort(() => Math.random() - 0.5);
+                const roundPhotos = shuffled.slice(0, 4);
+                const words = roundPhotos.map(p => p.word).sort(() => Math.random() - 0.5);
+                game.rounds.push({ photos: roundPhotos, words: words, isRetry: false });
+            }
+            game.current = 0;
+            game.processing = false;
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
             startRound();
         }
 
         function startRound() {
-            gameState.selectedPhoto = null;
-            gameState.selectedWord = null;
-            gameState.isProcessing = false;
-            roundBadge.textContent = `Раунд ${gameState.round}/5`;
-            updateProgress();
-            hint.textContent = 'Выбери фото, затем подходящее слово';
-            hint.style.color = 'var(--text-secondary)';
+            if (game.current >= game.rounds.length) { showWin(); return; }
+            game.selectedPhoto = null;
+            game.selectedWord = null;
+            game.processing = false;
+            game.timeLeft = game.maxTime;
 
-            const shuffled = [...photos].sort(() => Math.random() - 0.5);
-            const roundPhotos = shuffled.slice(0, 4);
-            const targetIndex = Math.floor(Math.random() * 4);
-            const targetPhoto = roundPhotos[targetIndex];
-            const correctWord = targetPhoto.word;
+            const r = game.rounds[game.current];
+            document.getElementById('roundBadge').textContent = `Раунд ${game.current + 1} / ${game.rounds.length}`;
+            renderProgress();
+            document.getElementById('hint').textContent = 'Выбери фото, затем подходящее слово';
+            document.getElementById('hint').style.color = 'var(--text-secondary)';
 
-            const otherPhotos = photos.filter(p => p.id !== targetPhoto.id);
-            const wrongWords = [];
-            while (wrongWords.length < 3 && otherPhotos.length > 0) {
-                const rand = otherPhotos[Math.floor(Math.random() * otherPhotos.length)];
-                if (!wrongWords.includes(rand.word) && rand.word !== correctWord) {
-                    wrongWords.push(rand.word);
-                }
-            }
-            while (wrongWords.length < 3) wrongWords.push('???');
-            const words = [correctWord, ...wrongWords].sort(() => Math.random() - 0.5);
-
-            gameState.currentRoundData = {
-                photos: roundPhotos,
-                targetPhoto: targetPhoto,
-                correctWord: correctWord,
-                words: words
-            };
-            renderRound();
-        }
-
-        function renderRound() {
-            const data = gameState.currentRoundData;
-            gamePhotos.innerHTML = '';
-            data.photos.forEach((photo, idx) => {
-                const div = document.createElement('div');
-                div.className = 'game-photo';
-                div.dataset.index = idx;
-                div.innerHTML = `<img src="${photo.dataUrl}" alt="">`;
-                div.addEventListener('click', () => selectPhoto(idx));
-                gamePhotos.appendChild(div);
+            const gp = document.getElementById('gamePhotos');
+            gp.innerHTML = '';
+            r.photos.forEach((p, i) => {
+                const d = document.createElement('div');
+                d.className = 'game-photo';
+                d.innerHTML = `<img src="${p.dataUrl}" alt="">`;
+                d.onclick = () => selectPhoto(i);
+                gp.appendChild(d);
             });
 
-            wordsGrid.innerHTML = '';
-            data.words.forEach((word, idx) => {
-                const btn = document.createElement('button');
-                btn.className = 'word-btn';
-                btn.textContent = word;
-                btn.dataset.word = word;
-                btn.addEventListener('click', () => selectWord(word));
-                wordsGrid.appendChild(btn);
+            const wg = document.getElementById('wordsGrid');
+            wg.innerHTML = '';
+            r.words.forEach(w => {
+                const b = document.createElement('button');
+                b.className = 'word-btn';
+                b.textContent = w;
+                b.dataset.word = w;
+                b.onclick = () => selectWord(w);
+                wg.appendChild(b);
+            });
+
+            startTimer();
+        }
+
+        function renderProgress() {
+            const bar = document.getElementById('progressBar');
+            bar.innerHTML = '';
+            game.rounds.forEach((r, i) => {
+                const d = document.createElement('div');
+                d.className = 'progress-dot';
+                if (i < game.current) d.classList.add('done');
+                else if (i === game.current) d.classList.add('active');
+                if (r.isRetry) d.style.background = '#f39c12';
+                bar.appendChild(d);
             });
         }
 
-        function selectPhoto(index) {
-            if (gameState.isProcessing) return;
-            gameState.selectedPhoto = index;
-            document.querySelectorAll('.game-photo').forEach((el, i) => {
-                el.classList.toggle('selected', i === index);
-            });
+        function startTimer() {
+            clearInterval(game.timer);
+            const fill = document.getElementById('timerFill');
+            fill.style.width = '100%';
+            fill.className = 'timer-fill';
+            game.timer = setInterval(() => {
+                game.timeLeft -= 0.1;
+                const pct = Math.max(0, (game.timeLeft / game.maxTime) * 100);
+                fill.style.width = pct + '%';
+                if (game.timeLeft <= game.maxTime * 0.4) fill.classList.add('warning');
+                if (game.timeLeft <= game.maxTime * 0.2) fill.classList.add('danger');
+                if (game.timeLeft <= 0) { clearInterval(game.timer); handleTimeout(); }
+            }, 100);
+        }
+
+        function handleTimeout() {
+            if (game.processing) return;
+            game.processing = true;
+            document.getElementById('hint').textContent = '⏰ Время вышло! Раунд повторится позже';
+            document.getElementById('hint').style.color = 'var(--error)';
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            scheduleRetry();
+            setTimeout(() => { game.current++; startRound(); }, 1200);
+        }
+
+        function selectPhoto(idx) {
+            if (game.processing) return;
+            game.selectedPhoto = idx;
+            document.querySelectorAll('.game-photo').forEach((el, i) => el.classList.toggle('selected', i === idx));
             checkPair();
         }
 
         function selectWord(word) {
-            if (gameState.isProcessing) return;
-            gameState.selectedWord = word;
-            document.querySelectorAll('.word-btn').forEach(el => {
-                el.classList.toggle('selected', el.dataset.word === word);
-            });
+            if (game.processing) return;
+            game.selectedWord = word;
+            document.querySelectorAll('.word-btn').forEach(el => el.classList.toggle('selected', el.dataset.word === word));
             checkPair();
         }
 
         function checkPair() {
-            if (gameState.selectedPhoto === null || gameState.selectedWord === null) return;
-            const data = gameState.currentRoundData;
-            const selectedPhotoObj = data.photos[gameState.selectedPhoto];
-            const isCorrect = selectedPhotoObj.id === data.targetPhoto.id && gameState.selectedWord === data.correctWord;
-            gameState.isProcessing = true;
+            if (game.selectedPhoto === null || game.selectedWord === null) return;
+            clearInterval(game.timer);
+            game.processing = true;
 
-            const photoEl = document.querySelectorAll('.game-photo')[gameState.selectedPhoto];
-            const wordEl = Array.from(document.querySelectorAll('.word-btn')).find(el => el.dataset.word === gameState.selectedWord);
+            const round = game.rounds[game.current];
+            const photo = round.photos[game.selectedPhoto];
+            const isCorrect = photo.word === game.selectedWord;
+
+            const pEl = document.querySelectorAll('.game-photo')[game.selectedPhoto];
+            const wEl = Array.from(document.querySelectorAll('.word-btn')).find(el => el.dataset.word === game.selectedWord);
 
             if (isCorrect) {
-                photoEl.classList.add('correct');
-                wordEl.classList.add('correct');
-                hint.textContent = '✅ Правильно!';
-                hint.style.color = 'var(--success)';
+                pEl.classList.add('correct');
+                wEl.classList.add('correct');
+                document.getElementById('hint').textContent = '✅ Правильно!';
+                document.getElementById('hint').style.color = 'var(--success)';
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-                setTimeout(() => {
-                    if (gameState.round >= 5) showWin();
-                    else { gameState.round++; startRound(); }
-                }, 800);
+                setTimeout(() => { game.current++; startRound(); }, 700);
             } else {
-                photoEl.classList.add('wrong');
-                wordEl.classList.add('wrong');
-                hint.textContent = '❌ Неправильно!';
-                hint.style.color = 'var(--error)';
+                pEl.classList.add('wrong');
+                wEl.classList.add('wrong');
+                document.getElementById('hint').textContent = '❌ Неправильно. Раунд повторится позже';
+                document.getElementById('hint').style.color = 'var(--error)';
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                setTimeout(() => showGameOver(), 600);
+                scheduleRetry();
+                setTimeout(() => { game.current++; startRound(); }, 1200);
             }
         }
 
-        function updateProgress() {
-            document.querySelectorAll('.progress-dot').forEach((dot, i) => {
-                dot.classList.remove('active', 'done');
-                if (i < gameState.round - 1) dot.classList.add('done');
-                else if (i === gameState.round - 1) dot.classList.add('active');
-            });
-        }
-
-        function showGameOver() {
-            modalIcon.textContent = '❌';
-            modalTitle.textContent = 'Ошибка!';
-            modalText.textContent = 'Неправильная пара. Все достижения сброшены.';
-            modalBtn.textContent = 'Начать заново';
-            modalBtn.className = 'modal-btn danger';
-            modalBtn.onclick = () => { hideModal(); backToSetup(); };
-            modalOverlay.classList.add('active');
+        function scheduleRetry() {
+            // Вставляем повтор через 2 позиции вперёд, если есть куда
+            const currentRound = game.rounds[game.current];
+            const insertPos = Math.min(game.current + 2, game.rounds.length);
+            if (!currentRound.isRetry) {
+                game.rounds.splice(insertPos, 0, { ...currentRound, isRetry: true });
+            }
         }
 
         function showWin() {
-            modalIcon.textContent = '🎉';
-            modalTitle.textContent = 'Победа!';
-            modalText.textContent = 'Ты прошёл все 5 раундов! Отличная память!';
-            modalBtn.textContent = 'Играть снова';
-            modalBtn.className = 'modal-btn success';
-            modalBtn.onclick = () => { hideModal(); backToSetup(); };
-            modalOverlay.classList.add('active');
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            onWin();
+            document.getElementById('winTitle').textContent = '🎉 Победа!';
+            document.getElementById('winText').textContent = `Ты прошёл все раунды! 🔥 Streak: ${streak.count} дней`;
+            document.getElementById('winModal').classList.add('active');
+            launchConfetti();
         }
 
-        function hideModal() { modalOverlay.classList.remove('active'); }
-        function backToSetup() {
-            gameScreen.style.display = 'none';
-            setupScreen.style.display = 'block';
+        function closeWin() {
+            document.getElementById('winModal').classList.remove('active');
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('setupScreen').style.display = 'block';
+            switchTab('home');
         }
 
-        modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) hideModal(); });
+        // ====== TRAINING ======
+        function startTraining() {
+            if (photos.length === 0) { showToast('Сначала добавь фото на главной'); return; }
+            training.current = 0;
+            training.items = [];
+            const allWords = photos.map(p => p.word).filter(Boolean);
+            for (let i = 0; i < training.total; i++) {
+                const photo = photos[Math.floor(Math.random() * photos.length)];
+                const isCorrect = Math.random() > 0.3;
+                let word;
+                if (isCorrect || allWords.length <= 1) word = photo.word;
+                else {
+                    const other = allWords.filter(w => w !== photo.word);
+                    word = other.length ? other[Math.floor(Math.random() * other.length)] : photo.word;
+                }
+                training.items.push({ photo, word, isCorrect: word === photo.word });
+            }
+            document.getElementById('trainingIntro').style.display = 'none';
+            document.getElementById('trainingDone').style.display = 'none';
+            document.getElementById('trainingGame').style.display = 'block';
+            showTrainingItem();
+        }
 
-        // Init
+        function showTrainingItem() {
+            if (training.current >= training.items.length) {
+                document.getElementById('trainingGame').style.display = 'none';
+                document.getElementById('trainingDone').style.display = 'block';
+                return;
+            }
+            const item = training.items[training.current];
+            document.getElementById('trainingProgress').textContent = `${training.current + 1} / ${training.total}`;
+            document.getElementById('trainingImg').src = item.photo.dataUrl;
+            document.getElementById('trainingWord').textContent = item.word;
+        }
+
+        function trainingAnswer(answer) {
+            const item = training.items[training.current];
+            const isCorrect = (answer === true && item.isCorrect) || (answer === false && !item.isCorrect);
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred(isCorrect ? 'success' : 'error');
+            }
+            training.current++;
+            showTrainingItem();
+        }
+
+        // ====== CONFETTI ======
+        function launchConfetti() {
+            const colors = ['#2481cc', '#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22', '#1abc9c'];
+            for (let i = 0; i < 60; i++) {
+                const el = document.createElement('div');
+                el.className = 'confetti';
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.background = colors[Math.floor(Math.random() * colors.length)];
+                el.style.animationDuration = (2 + Math.random() * 2) + 's';
+                el.style.animationDelay = Math.random() * 0.8 + 's';
+                el.style.width = (6 + Math.random() * 6) + 'px';
+                el.style.height = (6 + Math.random() * 6) + 'px';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 4000);
+            }
+        }
+
+        // ====== START ======
         init();
     </script>
 </body>
