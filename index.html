@@ -95,6 +95,7 @@
         .drag-words{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:60px}
         .drag-word{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:14px 20px;font-size:16px;font-weight:700;cursor:grab;transition:all .15s;box-shadow:var(--shadow);user-select:none;touch-action:none;position:relative;z-index:10;color:var(--text)}
         .drag-word:active{cursor:grabbing;transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,.15);z-index:1000}
+        .drag-word.selected{border-color:var(--primary);background:rgba(36,129,204,.12);transform:scale(1.05);box-shadow:0 4px 14px rgba(36,129,204,.35)}
         .drag-word.matched{opacity:0;transform:scale(0);pointer-events:none}
 
         @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
@@ -160,7 +161,7 @@
                 </div>
                 <h1>🧠 Ассоциации</h1>
                 <p>Загрузи фото и придумай к ним слова</p>
-                <div class="version">v0.5</div>
+                <div class="version">v0.5.1</div>
                 <div class="saved-badge" id="savedBadge">✅ Сохранено</div>
                 <div class="counter" id="counter">Добавлено: 0/4</div>
             </div>
@@ -246,6 +247,7 @@
         let photos=[],streak={count:0,lastWinDate:null},winsTotal=0,saveTimer=null,lastWordInput=null;
         let game={rounds:[],current:0,processing:false,timer:null,timeLeft:0,maxTime:12,dragMatched:0,dragTotal:0};
         let training={items:[],current:0,total:20};
+        let dragSelected=null,suppressClickUntil=0;
         const wordBank={'Followership':['инициативный','преданный','ответственный','командный','надёжный','лояльный','послушный','исполнительный'],'Уверенность':['сильный','уверенный','смелый','решительный','достойный','неповторимый','харизматичный'],'Спокойствие':['спокойный','уравновешенный','мудрый','терпеливый','внимательный','осознанный'],'Энергия':['энергичный','активный','целеустремлённый','продуктивный','динамичный','воодушевлённый']};
 
         // Тёмная тема: подхватываем цвета из Telegram и реагируем на смену темы
@@ -310,33 +312,64 @@
             const seen={},uniquePhotos=photos.filter(p=>{if(seen[p.word])return false;seen[p.word]=1;return true});
             let normalCount=0;for(let i=0;i<total;i++){let target;const isDrag=uniquePhotos.length>=4&&((normalCount>=5&&Math.random()<.5)||(normalCount>=8));if(isDrag){normalCount=0;const pool=[...uniquePhotos].sort(()=>Math.random()-.5).slice(0,4);const words=pool.map(p=>p.word).sort(()=>Math.random()-.5);game.rounds.push({type:'drag',photos:pool,words:words,isRetry:false});continue}normalCount++;const favAvail=favorites.filter(p=>p.id!==lastId);if(favAvail.length>0&&Math.random()<.25){target=favAvail[Math.floor(Math.random()*favAvail.length)]}else{if(deckIdx>=deck.length){deck=[...photos].sort(()=>Math.random()-.5);deckIdx=0}let safety=0;while(deck[deckIdx].id===lastId&&deck.length>1&&safety<deck.length){deckIdx++;safety++;if(deckIdx>=deck.length){deck=[...photos].sort(()=>Math.random()-.5);deckIdx=0}}target=deck[deckIdx];deckIdx++}lastId=target.id;const other=photos.filter(p=>p.id!==target.id).map(p=>p.word);const dist=[];while(dist.length<3&&other.length>0){const w=other[Math.floor(Math.random()*other.length)];if(!dist.includes(w)&&w!==target.word)dist.push(w)}while(dist.length<3)dist.push('???');const words=[target.word,...dist].sort(()=>Math.random()-.5);game.rounds.push({type:'normal',target:target,words:words,isRetry:false})}game.current=0;game.processing=false;document.getElementById('setupScreen').style.display='none';document.getElementById('gameScreen').style.display='block';startRound()}
 
-        function startRound(){if(game.current>=game.rounds.length){showWin();return}game.processing=false;const r=game.rounds[game.current];const isDrag=r.type==='drag';game.maxTime=isDrag?20:12;game.timeLeft=game.maxTime;document.getElementById('roundBadge').textContent='Раунд '+(game.current+1)+' / '+game.rounds.length;renderProgress();document.getElementById('gameTitle').textContent=isDrag?'🧩 Собери пары':'Найди слово';document.getElementById('hint').textContent=isDrag?'Перетащи слова к правильным фото':'Какое слово подходит?';document.getElementById('hint').style.color='var(--text-secondary)';const gc=document.getElementById('gameContent');gc.innerHTML='';if(isDrag){renderDragRound(r,gc)}else{renderNormalRound(r,gc)}startTimer()}
+        function startRound(){if(game.current>=game.rounds.length){showWin();return}game.processing=false;const r=game.rounds[game.current];const isDrag=r.type==='drag';game.maxTime=isDrag?20:12;game.timeLeft=game.maxTime;document.getElementById('roundBadge').textContent='Раунд '+(game.current+1)+' / '+game.rounds.length;renderProgress();document.getElementById('gameTitle').textContent=isDrag?'🧩 Собери пары':'Найди слово';document.getElementById('hint').textContent=isDrag?'Перетащи слова к фото — или тапни слово, потом фото':'Какое слово подходит?';document.getElementById('hint').style.color='var(--text-secondary)';const gc=document.getElementById('gameContent');gc.innerHTML='';if(isDrag){renderDragRound(r,gc)}else{renderNormalRound(r,gc)}startTimer()}
 
         function renderNormalRound(r,container){container.innerHTML=`<div class="game-photo-wrap"><img src="${r.target.dataUrl}" alt=""></div><div class="photo-prefix">${esc(r.target.prefix||'Я')}</div><div class="words-title">Выбери слово:</div><div class="words-grid" id="wordsGrid"></div>`;const wg=document.getElementById('wordsGrid');r.words.forEach(w=>{const b=document.createElement('button');b.className='word-btn';b.textContent=w;b.dataset.word=w;b.onclick=()=>checkWord(w,b);wg.appendChild(b)})}
 
-        function renderDragRound(r,container){game.dragMatched=0;game.dragTotal=4;const shuffledWords=[...r.words].sort(()=>Math.random()-.5);let html=`<div class="drag-grid" id="dragGrid">`;r.photos.forEach((p,idx)=>{html+=`<div class="drag-target" data-index="${idx}" data-word="${esc(p.word)}" data-id="${p.id}"><img src="${p.dataUrl}" alt=""><div class="drag-label">${esc(p.word)}</div></div>`});html+=`</div><div class="words-title">Перетащи сюда:</div><div class="drag-words" id="dragWords"></div>`;container.innerHTML=html;const dw=document.getElementById('dragWords');shuffledWords.forEach(w=>{const d=document.createElement('div');d.className='drag-word';d.textContent=w;d.dataset.word=w;makeDraggable(d);dw.appendChild(d)})}
+        function renderDragRound(r,container){game.dragMatched=0;game.dragTotal=4;dragSelected=null;const shuffledWords=[...r.words].sort(()=>Math.random()-.5);let html=`<div class="drag-grid" id="dragGrid">`;r.photos.forEach((p,idx)=>{html+=`<div class="drag-target" data-index="${idx}" data-word="${esc(p.word)}" data-id="${p.id}"><img src="${p.dataUrl}" alt=""><div class="drag-label">${esc(p.word)}</div></div>`});html+=`</div><div class="words-title">Перетащи слово на фото — или тапни слово, потом фото:</div><div class="drag-words" id="dragWords"></div>`;container.innerHTML=html;
+            container.querySelectorAll('.drag-target').forEach(t=>{t.addEventListener('click',()=>{if(!dragSelected||game.processing)return;attemptMatch(t,dragSelected)})});
+            const dw=document.getElementById('dragWords');shuffledWords.forEach(w=>{const d=document.createElement('div');d.className='drag-word';d.textContent=w;d.dataset.word=w;makeDraggable(d);dw.appendChild(d)})}
 
-        // FIX: mousemove/mouseup на document теперь вешаются только на время перетаскивания
-        // и снимаются в onEnd — раньше обработчики копились на каждое слово навсегда
-        function makeDraggable(el){let startX,startY,origX,origY,dragging=false,clone=null;
-            const getPoint=e=>e.touches?e.touches[0]:(e.changedTouches?e.changedTouches[0]:e);
-            const clearHighlight=()=>document.querySelectorAll('.drag-target.highlight').forEach(t=>t.classList.remove('highlight'));
-            const onMove=e=>{if(!dragging)return;if(e.cancelable)e.preventDefault();const t=getPoint(e);clone.style.left=(origX+t.clientX-startX)+'px';clone.style.top=(origY+t.clientY-startY)+'px';
-                clearHighlight();const under=document.elementFromPoint(t.clientX,t.clientY);const zone=under&&under.closest('.drag-target');if(zone)zone.classList.add('highlight')};
+        // Общая проверка совпадения «слово → фото» — используется и для drag-and-drop, и для режима тапов
+        function attemptMatch(dropZone,el){const correctWord=dropZone.dataset.word;const draggedWord=el.dataset.word;
+            if(correctWord===draggedWord){dropZone.classList.add('correct');el.classList.add('matched');el.classList.remove('selected');if(dragSelected===el)dragSelected=null;game.dragMatched++;if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');if(game.dragMatched>=game.dragTotal){clearInterval(game.timer);setTimeout(()=>{game.current++;startRound()},600)}}
+            else{dropZone.classList.add('wrong');if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');setTimeout(()=>dropZone.classList.remove('wrong'),400)}}
+
+        function makeDraggable(el){let startX,startY,dragging=false,moved=false,clone=null,lastZone=null;
+            // FIX: в touchend список e.touches УЖЕ ПУСТОЙ, но сам объект существует (truthy) —
+            // нельзя писать e.touches?e.touches[0]:..., иначе берётся undefined и обработчик падает.
+            // changedTouches надёжно содержит точку во всех touch-событиях.
+            const getPoint=e=>{if(e.changedTouches&&e.changedTouches.length)return e.changedTouches[0];if(e.touches&&e.touches.length)return e.touches[0];return e};
+            const zoneAt=(x,y)=>{const n=document.elementFromPoint(x,y);return n?n.closest('.drag-target'):null};
+            let rect=null;
+            const ensureClone=()=>{if(clone)return;clone=el.cloneNode(true);clone.style.position='fixed';clone.style.left=rect.left+'px';clone.style.top=rect.top+'px';clone.style.width=rect.width+'px';clone.style.margin='0';clone.style.zIndex='9999';clone.style.pointerEvents='none';
+                // FIX: убираем transition у клона — иначе каждое движение анимировалось 150мс и слово «плыло» за пальцем
+                clone.style.transition='none';clone.style.transform='translate(0px,0px)';clone.style.willChange='transform';
+                document.body.appendChild(clone);el.style.opacity='0.3'};
+            const onMove=e=>{if(!dragging)return;if(e.cancelable)e.preventDefault();const t=getPoint(e);if(!t)return;
+                const dx=t.clientX-startX,dy=t.clientY-startY;
+                // Клон создаётся только когда палец реально сдвинулся — при простом тапе ничего не мерцает
+                if(Math.abs(dx)>6||Math.abs(dy)>6){moved=true;ensureClone()}
+                if(!clone)return;
+                // FIX: двигаем через transform (GPU), а не left/top — иначе лаги от пересчёта layout
+                clone.style.transform='translate('+dx+'px,'+dy+'px)';
+                const zone=zoneAt(t.clientX,t.clientY);if(zone!==lastZone){if(lastZone)lastZone.classList.remove('highlight');if(zone)zone.classList.add('highlight');lastZone=zone}};
             const onEnd=e=>{if(!dragging)return;dragging=false;
                 document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onEnd);
-                el.style.opacity='1';if(clone){clone.remove();clone=null}clearHighlight();
-                const t=getPoint(e);const target=document.elementFromPoint(t.clientX,t.clientY);if(!target)return;
-                const dropZone=target.closest('.drag-target');if(!dropZone)return;
-                const correctWord=dropZone.dataset.word;const draggedWord=el.dataset.word;
-                if(correctWord===draggedWord){dropZone.classList.add('correct');el.classList.add('matched');game.dragMatched++;if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');if(game.dragMatched>=game.dragTotal){clearInterval(game.timer);setTimeout(()=>{game.current++;startRound()},600)}}
-                else{dropZone.classList.add('wrong');if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');setTimeout(()=>dropZone.classList.remove('wrong'),400)}};
-            const start=e=>{if(game.processing)return;if(e.cancelable)e.preventDefault();const t=getPoint(e);dragging=true;startX=t.clientX;startY=t.clientY;const rect=el.getBoundingClientRect();origX=rect.left;origY=rect.top;clone=el.cloneNode(true);clone.style.position='fixed';clone.style.left=rect.left+'px';clone.style.top=rect.top+'px';clone.style.width=rect.width+'px';clone.style.margin='0';clone.style.zIndex='9999';clone.style.pointerEvents='none';document.body.appendChild(clone);el.style.opacity='0.3';
+                el.style.opacity='1';if(clone){clone.remove();clone=null}
+                if(lastZone){lastZone.classList.remove('highlight');lastZone=null}
+                const t=getPoint(e);if(!t)return;
+                if(moved)suppressClickUntil=Date.now()+300;else return;
+                const dropZone=zoneAt(t.clientX,t.clientY);if(!dropZone)return;
+                attemptMatch(dropZone,el)};
+            const start=e=>{if(game.processing||el.classList.contains('matched'))return;
+                // preventDefault только для мыши (от выделения текста). Для тача не нужен:
+                // touch-action:none на .drag-word сам запрещает скролл, а preventDefault
+                // на touchstart заблокировал бы click — сломался бы режим тапов.
+                if(e.type==='mousedown')e.preventDefault();
+                const t=getPoint(e);if(!t)return;
+                dragging=true;moved=false;startX=t.clientX;startY=t.clientY;rect=el.getBoundingClientRect();
                 document.addEventListener('mousemove',onMove);document.addEventListener('mouseup',onEnd)};
             el.addEventListener('touchstart',start,{passive:false});
             el.addEventListener('touchmove',onMove,{passive:false});
             el.addEventListener('touchend',onEnd);
-            el.addEventListener('mousedown',start)}
+            el.addEventListener('touchcancel',onEnd);
+            el.addEventListener('mousedown',start);
+            // Режим тапов: тап по слову выбирает его, тап по фото — совмещает
+            el.addEventListener('click',()=>{if(Date.now()<suppressClickUntil||game.processing||el.classList.contains('matched'))return;
+                if(dragSelected===el){el.classList.remove('selected');dragSelected=null;return}
+                if(dragSelected)dragSelected.classList.remove('selected');
+                dragSelected=el;el.classList.add('selected');if(tg.HapticFeedback&&tg.HapticFeedback.selectionChanged)tg.HapticFeedback.selectionChanged()})}
 
         function renderProgress(){const b=document.getElementById('progressBar');b.innerHTML='';game.rounds.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';if(i<game.current)d.classList.add('done');else if(i===game.current)d.classList.add('active');if(r.isRetry)d.style.background='#f39c12';if(r.type==='drag'){d.classList.add('drag')}b.appendChild(d)})}
 
