@@ -6,7 +6,7 @@
     <title>Ассоциации</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+        *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:none}
         :root{--bg:#f5f5f5;--surface:#fff;--primary:#2481cc;--primary-dark:#1a6cb3;--text:#000;--text-secondary:#707579;--border:#dfe1e5;--error:#e74c3c;--success:#2ecc71;--warning:#f39c12;--shadow:0 2px 8px rgba(0,0,0,.08)}
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
         .container{max-width:480px;margin:0 auto;padding:16px;min-height:100vh;position:relative}
@@ -14,8 +14,11 @@
         .header{text-align:center;margin-bottom:16px;padding-top:8px;position:relative}
         .header h1{font-size:24px;font-weight:800;margin-bottom:4px}
         .header p{color:var(--text-secondary);font-size:13px}
-        .streak-badge{position:absolute;top:0;right:0;background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 2px 6px rgba(238,90,36,.3);display:none}
+        .badges-row{position:absolute;top:0;right:0;display:flex;gap:6px;align-items:center}
+        .streak-badge{display:none;background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 2px 6px rgba(238,90,36,.3)}
         .streak-badge.active{display:block}
+        .wins-badge{display:none;background:linear-gradient(135deg,#f1c40f,#f39c12);color:#fff;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:700;box-shadow:0 2px 6px rgba(243,156,18,.3)}
+        .wins-badge.active{display:block}
         .version{position:absolute;bottom:-4px;right:0;font-size:11px;color:var(--text-secondary);font-weight:600;opacity:.7}
 
         .nav-tabs{display:flex;gap:8px;margin-bottom:16px;background:var(--surface);padding:4px;border-radius:14px;box-shadow:var(--shadow)}
@@ -30,8 +33,9 @@
         .photo-card{background:var(--surface);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);position:relative;animation:fadeIn .3s ease;display:flex;flex-direction:column}
         .photo-card .img-wrap{width:100%;aspect-ratio:3/4;max-height:220px;background:#f0f0f0;overflow:hidden;display:flex;align-items:center;justify-content:center}
         .photo-card .img-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+        .photo-card .fav-btn{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.4);color:#fff;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;z-index:2;transition:all .2s}
+        .photo-card .fav-btn.active{background:#f1c40f}
         .photo-card .delete-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;z-index:2}
-
         .photo-card .word-input{width:100%;border:none;padding:10px 8px;font-size:14px;text-align:center;font-weight:600;outline:none;background:transparent;border-top:1px solid var(--border);color:var(--text)}
         .photo-card .word-input::placeholder{color:#bbb;font-weight:500}
         .photo-card .prefix-input{color:var(--primary);background:rgba(36,129,204,.06);font-size:13px;font-weight:700;letter-spacing:.5px}
@@ -67,12 +71,31 @@
         .progress-dot.active{background:var(--primary);transform:scale(1.3)}
         .progress-dot.done{background:var(--success)}
         .progress-dot.retry{background:var(--warning)}
+        .progress-dot.drag{background:linear-gradient(135deg,#9b59b6,#8e44ad)}
 
         .hint{text-align:center;color:var(--text-secondary);font-size:14px;margin-bottom:12px;min-height:20px;font-weight:500}
 
+        /* NORMAL ROUND */
         .game-photo-wrap{text-align:center;margin-bottom:12px}
         .game-photo-wrap img{max-width:100%;width:auto;height:auto;max-height:42vh;display:inline-block;border-radius:16px;box-shadow:var(--shadow);background:#f0f0f0}
         .photo-prefix{text-align:center;font-size:28px;font-weight:800;color:var(--primary);margin-bottom:16px;letter-spacing:1px}
+
+        /* DRAG ROUND */
+        .drag-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+        .drag-target{position:relative;background:var(--surface);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);border:3px solid transparent;transition:all .2s;aspect-ratio:3/4;max-height:180px}
+        .drag-target img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+        .drag-target.highlight{border-color:var(--primary);transform:scale(1.02)}
+        .drag-target.correct{border-color:var(--success)}
+        .drag-target.wrong{animation:shake .4s}
+        .drag-target .drag-label{position:absolute;bottom:0;left:0;right:0;background:rgba(46,204,113,.9);color:#fff;text-align:center;padding:6px;font-size:13px;font-weight:700;transform:translateY(100%);transition:transform .2s}
+        .drag-target.correct .drag-label{transform:translateY(0)}
+
+        .drag-words{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:60px}
+        .drag-word{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:14px 20px;font-size:16px;font-weight:700;cursor:grab;transition:all .15s;box-shadow:var(--shadow);user-select:none;touch-action:none;position:relative;z-index:10}
+        .drag-word:active{cursor:grabbing;transform:scale(1.05);box-shadow:0 6px 20px rgba(0,0,0,.15);z-index:1000}
+        .drag-word.matched{opacity:0;transform:scale(0);pointer-events:none}
+
+        @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 
         .words-title{text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:10px;font-weight:600}
         .words-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -121,17 +144,20 @@
         .saved-badge{text-align:center;font-size:12px;color:var(--success);margin-bottom:10px;font-weight:600;opacity:0;transition:opacity .3s}
         .saved-badge.show{opacity:1}
 
-        @media(max-width:360px){.photo-card .img-wrap{max-height:180px}}
+        @media(max-width:360px){.photo-card .img-wrap{max-height:180px}.drag-target{max-height:150px}}
     </style>
 </head>
 <body>
     <div class="container">
         <div id="setupScreen">
             <div class="header">
-                <div class="streak-badge" id="streakBadge">🔥 0</div>
+                <div class="badges-row">
+                    <div class="wins-badge" id="winsBadge">🏆 0</div>
+                    <div class="streak-badge" id="streakBadge">🔥 0</div>
+                </div>
                 <h1>🧠 Ассоциации</h1>
                 <p>Загрузи фото и придумай к ним слова</p>
-                <div class="version">v0.2</div>
+                <div class="version">v0.4</div>
                 <div class="saved-badge" id="savedBadge">✅ Сохранено</div>
                 <div class="counter" id="counter">Добавлено: 0/4</div>
             </div>
@@ -185,16 +211,13 @@
         <div class="game-screen" id="gameScreen">
             <div class="game-header">
                 <button class="back-btn" onclick="exitGame()">✕</button>
-                <h2>Найди слово</h2>
+                <h2 id="gameTitle">Найди слово</h2>
                 <div class="round-badge" id="roundBadge">Раунд 1</div>
             </div>
             <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
             <div class="progress-bar" id="progressBar"></div>
             <div class="hint" id="hint">Какое слово подходит?</div>
-            <div class="game-photo-wrap"><img id="gameImg" src="" alt=""></div>
-            <div class="photo-prefix" id="photoPrefix">Я</div>
-            <div class="words-title">Выбери слово:</div>
-            <div class="words-grid" id="wordsGrid"></div>
+            <div id="gameContent"></div>
         </div>
     </div>
 
@@ -211,47 +234,65 @@
     <script>
         const tg=window.Telegram.WebApp;tg.ready();tg.expand();
         const OLD_DB='AssociationsGame',NEW_DB='AssociationsGame_v3',VER=1,STORE_P='photos',STORE_M='meta';
-        let photos=[],streak={count:0,lastWinDate:null},saveTimer=null,game={rounds:[],current:0,processing:false,timer:null,timeLeft:0,maxTime:12},training={items:[],current:0,total:20};
+        let photos=[],streak={count:0,lastWinDate:null},winsTotal=0,saveTimer=null;
+        let game={rounds:[],current:0,processing:false,timer:null,timeLeft:0,maxTime:12,dragMatched:0,dragTotal:0};
+        let training={items:[],current:0,total:20};
         const wordBank={'Followership':['инициативный','преданный','ответственный','командный','надёжный','лояльный','послушный','исполнительный'],'Уверенность':['сильный','уверенный','смелый','решительный','достойный','неповторимый','харизматичный'],'Спокойствие':['спокойный','уравновешенный','мудрый','терпеливый','внимательный','осознанный'],'Энергия':['энергичный','активный','целеустремлённый','продуктивный','динамичный','воодушевлённый']};
 
         function openDB(name){return new Promise((res,rej)=>{const r=indexedDB.open(name,VER);r.onerror=()=>rej(r.error);r.onsuccess=()=>res(r.result);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains(STORE_P))d.createObjectStore(STORE_P,{keyPath:'id'});if(!d.objectStoreNames.contains(STORE_M))d.createObjectStore(STORE_M,{keyPath:'key'})}})}
-        async function migrate(){return new Promise(res=>{try{const r=indexedDB.open(OLD_DB);r.onsuccess=async e=>{const old=e.target.result,neo=await openDB(NEW_DB);let mp=[],mm=null;if(old.objectStoreNames.contains(STORE_P)){const t=old.transaction(STORE_P,'readonly'),d=await new Promise(r2=>{const q=t.objectStore(STORE_P).getAll();q.onsuccess=()=>r2(q.result);q.onerror=()=>r2([])});if(d?.length){const n=neo.transaction(STORE_P,'readwrite');for(const i of d){if(!i.prefix)i.prefix='Я';await n.objectStore(STORE_P).put(i)}mp=d}}if(old.objectStoreNames.contains(STORE_M)){const t=old.transaction(STORE_M,'readonly'),d=await new Promise(r2=>{const q=t.objectStore(STORE_M).getAll();q.onsuccess=()=>r2(q.result);q.onerror=()=>r2([])});if(d?.length){const n=neo.transaction(STORE_M,'readwrite');for(const i of d)await n.objectStore(STORE_M).put(i);mm=d}}old.close();if(mp.length||mm)indexedDB.deleteDatabase(OLD_DB);res({photos:mp,meta:mm})};r.onerror=()=>res({photos:[],meta:null})}catch(e){res({photos:[],meta:null})}})}
+        async function migrate(){return new Promise(res=>{try{const r=indexedDB.open(OLD_DB);r.onsuccess=async e=>{const old=e.target.result,neo=await openDB(NEW_DB);let mp=[],mm=null;if(old.objectStoreNames.contains(STORE_P)){const t=old.transaction(STORE_P,'readonly'),d=await new Promise(r2=>{const q=t.objectStore(STORE_P).getAll();q.onsuccess=()=>r2(q.result);q.onerror=()=>r2([])});if(d?.length){const n=neo.transaction(STORE_P,'readwrite');for(const i of d){if(!i.prefix)i.prefix='Я';if(!i.favorite)i.favorite=false;await n.objectStore(STORE_P).put(i)}mp=d}}if(old.objectStoreNames.contains(STORE_M)){const t=old.transaction(STORE_M,'readonly'),d=await new Promise(r2=>{const q=t.objectStore(STORE_M).getAll();q.onsuccess=()=>r2(q.result);q.onerror=()=>r2([])});if(d?.length){const n=neo.transaction(STORE_M,'readwrite');for(const i of d)await n.objectStore(STORE_M).put(i);mm=d}}old.close();if(mp.length||mm)indexedDB.deleteDatabase(OLD_DB);res({photos:mp,meta:mm})};r.onerror=()=>res({photos:[],meta:null})}catch(e){res({photos:[],meta:null})}})}
         async function savePhotos(){const d=await openDB(NEW_DB),t=d.transaction(STORE_P,'readwrite');await t.objectStore(STORE_P).clear();for(const p of photos)await t.objectStore(STORE_P).put(p);showSaved()}
         async function loadPhotos(){const d=await openDB(NEW_DB),t=d.transaction(STORE_P,'readonly');return new Promise((res,rej)=>{const r=t.objectStore(STORE_P).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
         async function saveMeta(k,v){const d=await openDB(NEW_DB),t=d.transaction(STORE_M,'readwrite');await t.objectStore(STORE_M).put({key:k,value:JSON.stringify(v)})}
         async function loadMeta(k,def){const d=await openDB(NEW_DB),t=d.transaction(STORE_M,'readonly');return new Promise(res=>{const r=t.objectStore(STORE_M).get(k);r.onsuccess=()=>res(r.result?JSON.parse(r.result.value):def);r.onerror=()=>res(def)})}
         async function clearPhotos(){const d=await openDB(NEW_DB);await d.transaction(STORE_P,'readwrite').objectStore(STORE_P).clear()}
 
-        async function init(){let ep=await loadPhotos()||[],em=await loadMeta('streak',null);if(!ep.length&&!em){const m=await migrate();if(m.photos.length){photos=m.photos;await savePhotos()}if(m.meta){const s=m.meta.find(x=>x.key==='streak');if(s){streak=JSON.parse(s.value);await saveMeta('streak',streak)}}}photos=await loadPhotos()||[];photos.forEach(p=>{if(!p.prefix)p.prefix='Я'});streak=await loadMeta('streak',{count:0,lastWinDate:null});checkStreak();renderPhotos();renderWordBank()}
+        async function init(){let ep=await loadPhotos()||[],em=await loadMeta('streak',null);if(!ep.length&&!em){const m=await migrate();if(m.photos.length){photos=m.photos;await savePhotos()}if(m.meta){const s=m.meta.find(x=>x.key==='streak');if(s){streak=JSON.parse(s.value);await saveMeta('streak',streak)}}}photos=await loadPhotos()||[];photos.forEach(p=>{if(!p.prefix)p.prefix='Я';if(!p.favorite)p.favorite=false});streak=await loadMeta('streak',{count:0,lastWinDate:null});winsTotal=await loadMeta('winsTotal',0);checkStreak();renderStats();renderPhotos();renderWordBank()}
         function getToday(){return new Date().toISOString().split('T')[0]}
         function getYesterday(){return new Date(Date.now()-864e5).toISOString().split('T')[0]}
-        function checkStreak(){const t=getToday(),y=getYesterday();if(!streak.lastWinDate)streak.count=0;else if(streak.lastWinDate!==t&&streak.lastWinDate!==y)streak.count=0;renderStreak()}
-        function renderStreak(){const el=document.getElementById('streakBadge');if(streak.count>0){el.textContent='🔥 '+streak.count;el.classList.add('active')}else el.classList.remove('active')}
-        async function onWin(){const t=getToday(),y=getYesterday();if(streak.lastWinDate===t);else if(streak.lastWinDate===y)streak.count++;else streak.count=1;streak.lastWinDate=t;await saveMeta('streak',streak);renderStreak()}
+        function checkStreak(){const t=getToday(),y=getYesterday();if(!streak.lastWinDate)streak.count=0;else if(streak.lastWinDate!==t&&streak.lastWinDate!==y)streak.count=0;renderStats()}
+
+        function renderStats(){const w=document.getElementById('winsBadge');if(winsTotal>0){w.textContent='🏆 '+winsTotal;w.classList.add('active')}else w.classList.remove('active');const s=document.getElementById('streakBadge');if(streak.count>0){s.textContent='🔥 '+streak.count;s.classList.add('active')}else s.classList.remove('active')}
+
+        async function onWin(){const t=getToday(),y=getYesterday();if(streak.lastWinDate===t);else if(streak.lastWinDate===y)streak.count++;else streak.count=1;streak.lastWinDate=t;await saveMeta('streak',streak);winsTotal++;await saveMeta('winsTotal',winsTotal);renderStats()}
         function switchTab(tab){document.querySelectorAll('.nav-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id==='tab-'+tab))}
 
-        function handleFiles(files){const arr=Array.from(files).filter(f=>f.type.startsWith('image/'));let done=0;arr.forEach(file=>{const r=new FileReader();r.onload=e=>{photos.push({id:Date.now()+Math.random(),dataUrl:e.target.result,word:'',prefix:'Я'});done++;if(done===arr.length){renderPhotos();scheduleSave()}};r.readAsDataURL(file)});document.getElementById('fileInput').value=''}
+        function handleFiles(files){const arr=Array.from(files).filter(f=>f.type.startsWith('image/'));let done=0;arr.forEach(file=>{const r=new FileReader();r.onload=e=>{photos.push({id:Date.now()+Math.random(),dataUrl:e.target.result,word:'',prefix:'Я',favorite:false});done++;if(done===arr.length){renderPhotos();scheduleSave()}};r.readAsDataURL(file)});document.getElementById('fileInput').value=''}
         function scheduleSave(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(()=>savePhotos(),600)}
         function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
-        function renderPhotos(){const g=document.getElementById('photoGrid');g.innerHTML='';photos.forEach((p,i)=>{const c=document.createElement('div');c.className='photo-card';c.innerHTML=`<button class="delete-btn" onclick="deletePhoto(${i})">×</button><div class="img-wrap"><img src="${p.dataUrl}" alt=""></div><input type="text" class="word-input" placeholder="Слово..." value="${esc(p.word)}" oninput="updateWord(${i},this.value)"><input type="text" class="word-input prefix-input" placeholder="Подсказка (Я)..." value="${esc(p.prefix||'Я')}" oninput="updatePrefix(${i},this.value)">`;g.appendChild(c)});const c=document.getElementById('counter');c.textContent='Добавлено: '+photos.length+'/4';c.classList.toggle('ready',photos.length>=4);document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0));document.getElementById('resetBtn').style.display=photos.length>0?'block':'none'}
+        function renderPhotos(){const g=document.getElementById('photoGrid');g.innerHTML='';photos.forEach((p,i)=>{const c=document.createElement('div');c.className='photo-card';c.innerHTML=`<button class="fav-btn ${p.favorite?'active':''}" onclick="toggleFavorite(${i},event)">★</button><button class="delete-btn" onclick="deletePhoto(${i})">×</button><div class="img-wrap"><img src="${p.dataUrl}" alt=""></div><input type="text" class="word-input" placeholder="Слово..." value="${esc(p.word)}" oninput="updateWord(${i},this.value)"><input type="text" class="word-input prefix-input" placeholder="Подсказка (Я)..." value="${esc(p.prefix||'Я')}" oninput="updatePrefix(${i},this.value)">`;g.appendChild(c)});const c=document.getElementById('counter');c.textContent='Добавлено: '+photos.length+'/4';c.classList.toggle('ready',photos.length>=4);document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0));document.getElementById('resetBtn').style.display=photos.length>0?'block':'none'}
         function updateWord(i,v){photos[i].word=v.trim();document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0));scheduleSave()}
         function updatePrefix(i,v){photos[i].prefix=v.trim();scheduleSave()}
+        function toggleFavorite(i,e){e.stopPropagation();photos[i].favorite=!photos[i].favorite;renderPhotos();scheduleSave()}
         function deletePhoto(i){photos.splice(i,1);renderPhotos();scheduleSave()}
-        async function resetAll(){if(!confirm('Удалить все фото, слова и стрик?'))return;photos=[];streak={count:0,lastWinDate:null};await clearPhotos();await saveMeta('streak',streak);renderPhotos();renderStreak()}
+        async function resetAll(){if(!confirm('Удалить все фото, слова, стрик и победы?'))return;photos=[];streak={count:0,lastWinDate:null};winsTotal=0;await clearPhotos();await saveMeta('streak',streak);await saveMeta('winsTotal',0);renderStats();renderPhotos();renderStreak()}
         function showSaved(){const b=document.getElementById('savedBadge');b.classList.add('show');setTimeout(()=>b.classList.remove('show'),1500)}
         function renderWordBank(){const c=document.getElementById('wordBank');c.innerHTML='';for(const[cat,words]of Object.entries(wordBank)){const d=document.createElement('div');d.className='word-category';d.innerHTML=`<h4>${cat}</h4>`;const ch=document.createElement('div');ch.className='word-chips';words.forEach(w=>{const b=document.createElement('button');b.className='word-chip';b.textContent=w;b.onclick=()=>copyWord(w);ch.appendChild(b)});d.appendChild(ch);c.appendChild(d)}}
         function copyWord(w){if(navigator.clipboard)navigator.clipboard.writeText(w);showToast('Скопировано: «'+w+'» — вставь в поле слова')}
         function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
         function exitGame(){clearInterval(game.timer);document.getElementById('gameScreen').style.display='none';document.getElementById('setupScreen').style.display='block';switchTab('home')}
 
-        function startGame(){if(photos.length<4)return;const total=photos.length+5;game.rounds=[];let lastId=null;for(let i=0;i<total;i++){let target;if(photos.length>1&&lastId!==null){const a=photos.filter(p=>p.id!==lastId);target=a[Math.floor(Math.random()*a.length)]}else target=photos[Math.floor(Math.random()*photos.length)];lastId=target.id;const other=photos.filter(p=>p.id!==target.id).map(p=>p.word);const dist=[];while(dist.length<3&&other.length>0){const w=other[Math.floor(Math.random()*other.length)];if(!dist.includes(w)&&w!==target.word)dist.push(w)}while(dist.length<3)dist.push('???');const words=[target.word,...dist].sort(()=>Math.random()-.5);game.rounds.push({target,words,isRetry:false})}game.current=0;game.processing=false;document.getElementById('setupScreen').style.display='none';document.getElementById('gameScreen').style.display='block';startRound()}
-        function startRound(){if(game.current>=game.rounds.length){showWin();return}game.processing=false;game.timeLeft=game.maxTime;const r=game.rounds[game.current];document.getElementById('roundBadge').textContent='Раунд '+(game.current+1)+' / '+game.rounds.length;renderProgress();document.getElementById('hint').textContent='Какое слово подходит?';document.getElementById('hint').style.color='var(--text-secondary)';document.getElementById('gameImg').src=r.target.dataUrl;document.getElementById('photoPrefix').textContent=r.target.prefix||'Я';const wg=document.getElementById('wordsGrid');wg.innerHTML='';r.words.forEach(w=>{const b=document.createElement('button');b.className='word-btn';b.textContent=w;b.dataset.word=w;b.onclick=()=>checkWord(w,b);wg.appendChild(b)});startTimer()}
-        function renderProgress(){const b=document.getElementById('progressBar');b.innerHTML='';game.rounds.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';if(i<game.current)d.classList.add('done');else if(i===game.current)d.classList.add('active');if(r.isRetry)d.style.background='#f39c12';b.appendChild(d)})}
+        function startGame(){if(photos.length<4)return;const total=photos.length+5;game.rounds=[];let deck=[...photos].sort(()=>Math.random()-.5);let deckIdx=0;let lastId=null;const favorites=photos.filter(p=>p.favorite);let normalCount=0;for(let i=0;i<total;i++){let target;const isDrag=(normalCount>=5&&Math.random()<.5)||(normalCount>=8);if(isDrag){normalCount=0;const pool=[...photos].sort(()=>Math.random()-.5).slice(0,4);const words=pool.map(p=>p.word).sort(()=>Math.random()-.5);game.rounds.push({type:'drag',photos:pool,words:words,isRetry:false});continue}normalCount++;const favAvail=favorites.filter(p=>p.id!==lastId);if(favAvail.length>0&&Math.random()<.25){target=favAvail[Math.floor(Math.random()*favAvail.length)]}else{if(deckIdx>=deck.length){deck=[...photos].sort(()=>Math.random()-.5);deckIdx=0}let safety=0;while(deck[deckIdx].id===lastId&&deck.length>1&&safety<deck.length){deckIdx++;safety++;if(deckIdx>=deck.length){deck=[...photos].sort(()=>Math.random()-.5);deckIdx=0}}target=deck[deckIdx];deckIdx++}lastId=target.id;const other=photos.filter(p=>p.id!==target.id).map(p=>p.word);const dist=[];while(dist.length<3&&other.length>0){const w=other[Math.floor(Math.random()*other.length)];if(!dist.includes(w)&&w!==target.word)dist.push(w)}while(dist.length<3)dist.push('???');const words=[target.word,...dist].sort(()=>Math.random()-.5);game.rounds.push({type:'normal',target:target,words:words,isRetry:false})}game.current=0;game.processing=false;document.getElementById('setupScreen').style.display='none';document.getElementById('gameScreen').style.display='block';startRound()}
+
+        function startRound(){if(game.current>=game.rounds.length){showWin();return}game.processing=false;const r=game.rounds[game.current];const isDrag=r.type==='drag';game.maxTime=isDrag?20:12;game.timeLeft=game.maxTime;document.getElementById('roundBadge').textContent='Раунд '+(game.current+1)+' / '+game.rounds.length;renderProgress();document.getElementById('gameTitle').textContent=isDrag?'🧩 Собери пары':'Найди слово';document.getElementById('hint').textContent=isDrag?'Перетащи слова к правильным фото':'Какое слово подходит?';document.getElementById('hint').style.color='var(--text-secondary)';const gc=document.getElementById('gameContent');gc.innerHTML='';if(isDrag){renderDragRound(r,gc)}else{renderNormalRound(r,gc)}startTimer()}
+
+        function renderNormalRound(r,container){container.innerHTML=`<div class="game-photo-wrap"><img src="${r.target.dataUrl}" alt=""></div><div class="photo-prefix">${esc(r.target.prefix||'Я')}</div><div class="words-title">Выбери слово:</div><div class="words-grid" id="wordsGrid"></div>`;const wg=document.getElementById('wordsGrid');r.words.forEach(w=>{const b=document.createElement('button');b.className='word-btn';b.textContent=w;b.dataset.word=w;b.onclick=()=>checkWord(w,b);wg.appendChild(b)})}
+
+        function renderDragRound(r,container){game.dragMatched=0;game.dragTotal=4;const shuffledWords=[...r.words].sort(()=>Math.random()-.5);let html=`<div class="drag-grid" id="dragGrid">`;r.photos.forEach((p,idx)=>{html+=`<div class="drag-target" data-index="${idx}" data-word="${esc(p.word)}" data-id="${p.id}"><img src="${p.dataUrl}" alt=""><div class="drag-label">${esc(p.word)}</div></div>`});html+=`</div><div class="words-title">Перетащи сюда:</div><div class="drag-words" id="dragWords"></div>`;container.innerHTML=html;const dw=document.getElementById('dragWords');shuffledWords.forEach(w=>{const d=document.createElement('div');d.className='drag-word';d.textContent=w;d.dataset.word=w;makeDraggable(d);dw.appendChild(d)})}
+
+        function makeDraggable(el){let startX,startY,origX,origY,dragging=false,clone=null;const start=e=>{if(game.processing)return;e.preventDefault();const touch=e.touches?e.touches[0]:e;dragging=true;startX=touch.clientX;startY=touch.clientY;const rect=el.getBoundingClientRect();origX=rect.left;origY=rect.top;clone=el.cloneNode(true);clone.style.position='fixed';clone.style.left=rect.left+'px';clone.style.top=rect.top+'px';clone.style.width=rect.width+'px';clone.style.margin='0';clone.style.zIndex='9999';clone.style.pointerEvents='none';document.body.appendChild(clone);el.style.opacity='0.3'};const move=e=>{if(!dragging)return;e.preventDefault();const touch=e.touches?e.touches[0]:e;clone.style.left=(origX+touch.clientX-startX)+'px';clone.style.top=(origY+touch.clientY-startY)+'px'};const end=e=>{if(!dragging)return;dragging=false;el.style.opacity='1';if(clone){clone.remove();clone=null}const touch=e.changedTouches?e.changedTouches[0]:e;const target=document.elementFromPoint(touch.clientX,touch.clientY);if(!target)return;const dropZone=target.closest('.drag-target');if(!dropZone)return;const correctWord=dropZone.dataset.word;const draggedWord=el.dataset.word;if(correctWord===draggedWord){dropZone.classList.add('correct');el.classList.add('matched');game.dragMatched++;if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');if(game.dragMatched>=game.dragTotal){clearInterval(game.timer);setTimeout(()=>{game.current++;startRound()},600)}}else{dropZone.classList.add('wrong');if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');setTimeout(()=>dropZone.classList.remove('wrong'),400)}};el.addEventListener('touchstart',start,{passive:false});el.addEventListener('touchmove',move,{passive:false});el.addEventListener('touchend',end);el.addEventListener('mousedown',start);document.addEventListener('mousemove',move);document.addEventListener('mouseup',end)}
+
+        function renderProgress(){const b=document.getElementById('progressBar');b.innerHTML='';game.rounds.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';if(i<game.current)d.classList.add('done');else if(i===game.current)d.classList.add('active');if(r.isRetry)d.style.background='#f39c12';if(r.type==='drag'){d.classList.add('drag')}b.appendChild(d)})}
+
         function startTimer(){clearInterval(game.timer);const f=document.getElementById('timerFill');f.style.width='100%';f.className='timer-fill';game.timer=setInterval(()=>{game.timeLeft-=.1;const p=Math.max(0,(game.timeLeft/game.maxTime)*100);f.style.width=p+'%';if(game.timeLeft<=game.maxTime*.4)f.classList.add('warning');if(game.timeLeft<=game.maxTime*.2)f.classList.add('danger');if(game.timeLeft<=0){clearInterval(game.timer);handleTimeout()}},100)}
-        function handleTimeout(){if(game.processing)return;game.processing=true;document.getElementById('hint').textContent='⏰ Время вышло! Раунд повторится позже';document.getElementById('hint').style.color='var(--error)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');scheduleRetry();setTimeout(()=>{game.current++;startRound()},1200)}
+
+        function handleTimeout(){if(game.processing)return;game.processing=true;const r=game.rounds[game.current];document.getElementById('hint').textContent='⏰ Время вышло! Раунд повторится позже';document.getElementById('hint').style.color='var(--error)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');scheduleRetry();setTimeout(()=>{game.current++;startRound()},1200)}
+
         function checkWord(word,btn){if(game.processing)return;clearInterval(game.timer);game.processing=true;const r=game.rounds[game.current];const ok=word===r.target.word;document.querySelectorAll('.word-btn').forEach(b=>b.disabled=true);if(ok){btn.classList.add('correct');document.getElementById('hint').textContent='✅ '+(r.target.prefix||'Я')+' '+word+'!';document.getElementById('hint').style.color='var(--success)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');setTimeout(()=>{game.current++;startRound()},900)}else{btn.classList.add('wrong');document.getElementById('hint').textContent='❌ Неправильно. Раунд повторится позже';document.getElementById('hint').style.color='var(--error)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');scheduleRetry();setTimeout(()=>{game.current++;startRound()},1200)}}
+
         function scheduleRetry(){const r=game.rounds[game.current];const pos=Math.min(game.current+2,game.rounds.length);if(!r.isRetry)game.rounds.splice(pos,0,{...r,isRetry:true})}
-        function showWin(){onWin();document.getElementById('winTitle').textContent='🎉 Победа!';document.getElementById('winText').textContent='Ты прошёл все раунды! 🔥 Streak: '+streak.count+' дней';document.getElementById('winModal').classList.add('active');launchConfetti()}
+
+        function showWin(){onWin();document.getElementById('winTitle').textContent='🎉 Победа!';document.getElementById('winText').textContent='Ты прошёл все раунды! 🔥 Streak: '+streak.count+' | 🏆 Побед: '+winsTotal;document.getElementById('winModal').classList.add('active');launchConfetti()}
         function closeWin(){document.getElementById('winModal').classList.remove('active');document.getElementById('gameScreen').style.display='none';document.getElementById('setupScreen').style.display='block';switchTab('home')}
 
         function startTraining(){if(!photos.length){showToast('Сначала добавь фото на главной');return}training.current=0;training.items=[];const all=photos.map(p=>p.word).filter(Boolean);for(let i=0;i<training.total;i++){const ph=photos[Math.floor(Math.random()*photos.length)];const ok=Math.random()>.3;let w;if(ok||all.length<=1)w=ph.word;else{const o=all.filter(x=>x!==ph.word);w=o.length?o[Math.floor(Math.random()*o.length)]:ph.word}training.items.push({photo:ph,word:w,isCorrect:w===ph.word})}document.getElementById('trainingIntro').style.display='none';document.getElementById('trainingDone').style.display='none';document.getElementById('trainingGame').style.display='block';showTrainingItem()}
