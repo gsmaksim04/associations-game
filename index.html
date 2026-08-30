@@ -81,6 +81,29 @@
         .self-prev{font-size:12px;color:var(--text-secondary);margin-top:6px}
         .self-empty{text-align:center;color:var(--text-secondary);padding:30px 16px;font-size:14px;line-height:1.5}
 
+        /* Drop-анимации в обычном раунде — такие же, как в раунде «Собери пары» */
+        .drop-photo-center{text-align:center;margin-bottom:12px}
+        .game-photo-wrap.drop-zone{display:inline-block;position:relative;margin-bottom:0}
+        .game-photo-wrap .drag-label{position:absolute;bottom:0;left:0;right:0;background:rgba(46,204,113,.9);color:#fff;text-align:center;padding:8px;font-size:14px;font-weight:700;transform:translateY(100%);transition:transform .2s;border-radius:0 0 16px 16px;pointer-events:none}
+        .game-photo-wrap.correct .drag-label{transform:translateY(0)}
+        .game-photo-wrap.correct img{outline:4px solid var(--success);outline-offset:-4px}
+        .game-photo-wrap.wrong{animation:shake .4s}
+        .game-photo-wrap.wrong img{outline:4px solid var(--error);outline-offset:-4px}
+
+        /* Числовой ввод оценки + статистика по словам */
+        .self-num{width:58px;padding:6px 4px;border:2px solid var(--border);border-radius:10px;font-size:16px;font-weight:800;text-align:center;color:var(--primary);outline:none;background:var(--surface)}
+        .self-num:focus{border-color:var(--primary)}
+        .self-toggle{display:flex;gap:6px;justify-content:center;margin-bottom:10px}
+        .self-toggle button{padding:5px 14px;border:1px solid var(--border);background:var(--bg);border-radius:16px;font-size:12px;font-weight:700;color:var(--text-secondary);cursor:pointer}
+        .self-toggle button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+        .ws-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+        .ws-row:last-child{margin-bottom:0}
+        .ws-name{width:92px;font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .ws-bar-wrap{flex:1;height:10px;background:rgba(0,0,0,.06);border-radius:5px;overflow:hidden}
+        .ws-bar{height:100%;background:linear-gradient(90deg,var(--primary),#6ab0de);border-radius:5px;transition:width .3s}
+        .ws-avg{width:32px;font-size:13px;font-weight:800;color:var(--primary);text-align:right}
+        .ws-n{width:28px;font-size:11px;color:var(--text-secondary);text-align:right}
+
         .counter{display:inline-block;background:var(--primary);color:#fff;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:12px}
         .counter.ready{background:var(--success)}
 
@@ -197,7 +220,7 @@
                 </div>
                 <h1>🧠 Ассоциации</h1>
                 <p>Загрузи фото и придумай к ним слова</p>
-                <div class="version">v0.9</div>
+                <div class="version">v0.10</div>
                 <div class="saved-badge" id="savedBadge">✅ Сохранено</div>
                 <div class="counter" id="counter">Добавлено: 0/4</div>
             </div>
@@ -260,7 +283,7 @@
 
         const OLD_DB='AssociationsGame',NEW_DB='AssociationsGame_v3',VER=1,STORE_P='photos',STORE_M='meta';
         let photos=[],streak={count:0,lastWinDate:null},winsTotal=0,saveTimer=null;
-        let selfRatings={},selfSaveTimer=null;
+        let selfRatings={},selfSaveTimer=null,histDays=7;
         let game={rounds:[],current:0,processing:false,timer:null,timeLeft:0,maxTime:12,dragMatched:0,dragTotal:0};
         let dragSelected=null,suppressClickUntil=0;
 
@@ -295,9 +318,21 @@
 
         // Сжатие фото перед сохранением: уменьшаем до 1024px и конвертируем в JPEG,
         // чтобы не упираться в квоту IndexedDB (полноразмерный DataURL весит в разы больше)
-        function compressImage(dataUrl){return new Promise(res=>{const img=new Image();img.onload=()=>{const MAX=1024;const scale=Math.min(1,MAX/Math.max(img.width,img.height));if(scale>=1){res(dataUrl);return}const w=Math.round(img.width*scale),h=Math.round(img.height*scale);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',0.82))};img.onerror=()=>res(dataUrl);img.src=dataUrl})}
+        function compressImage(dataUrl){return new Promise(res=>{let settled=false;const done=v=>{if(!settled){settled=true;res(v)}};
+            const img=new Image();
+            img.onload=()=>{try{const MAX=1024;const scale=Math.min(1,MAX/Math.max(img.width,img.height));if(scale>=1){done(dataUrl);return}const w=Math.round(img.width*scale),h=Math.round(img.height*scale);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);done(c.toDataURL('image/jpeg',0.82))}catch(e){done(dataUrl)}};
+            img.onerror=()=>done(dataUrl);
+            img.src=dataUrl;
+            // Страховка: если браузер не смог декодировать формат (например HEIC) — всё равно добавляем оригинал
+            setTimeout(()=>done(dataUrl),5000)})}
 
-        function handleFiles(files){const arr=Array.from(files).filter(f=>f.type.startsWith('image/'));if(!arr.length)return;let done=0;arr.forEach(file=>{const r=new FileReader();r.onload=async e=>{const dataUrl=await compressImage(e.target.result);photos.push({id:Date.now()+Math.random(),dataUrl:dataUrl,word:'',prefix:'Я',favorite:false});done++;if(done===arr.length){renderPhotos();scheduleSave()}};r.onerror=()=>{done++};r.readAsDataURL(file)});document.getElementById('fileInput').value=''}
+        // FIX: некоторые файлы (HEIC с iPhone, файлы из некоторых галерей) имеют пустой MIME-тип —
+        // раньше они молча отфильтровывались и фото «не добавлялись». Теперь проверяем и расширение.
+        function handleFiles(files){const arr=Array.from(files).filter(f=>f.type.startsWith('image/')||/\.(jpe?g|png|webp|gif|heic|heif|bmp|avif)$/i.test(f.name||''));
+            if(!arr.length){showToast('❌ Не удалось распознать изображение');document.getElementById('fileInput').value='';return}
+            let done=0;const finish=()=>{done++;if(done===arr.length){renderPhotos();scheduleSave()}};
+            arr.forEach(file=>{const r=new FileReader();r.onload=async e=>{try{const dataUrl=await compressImage(e.target.result);photos.push({id:Date.now()+Math.random(),dataUrl:dataUrl,word:'',prefix:'Я',favorite:false})}catch(err){photos.push({id:Date.now()+Math.random(),dataUrl:e.target.result,word:'',prefix:'Я',favorite:false})}finish()};r.onerror=finish;r.readAsDataURL(file)});
+            document.getElementById('fileInput').value=''}
         function scheduleSave(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(()=>savePhotos(),600)}
         function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
         function updateStartBtn(){document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0))}
@@ -319,7 +354,11 @@
 
         function startRound(){if(game.current>=game.rounds.length){showWin();return}game.processing=false;const r=game.rounds[game.current];const isDrag=r.type==='drag',isType=r.type==='type';game.maxTime=(isDrag||isType)?20:12;game.timeLeft=game.maxTime;document.getElementById('roundBadge').textContent='Раунд '+(game.current+1)+' / '+game.rounds.length;renderProgress();document.getElementById('gameTitle').textContent=isDrag?'🧩 Собери пары':(isType?'✍️ Введи слово':'Найди слово');document.getElementById('hint').textContent=isDrag?'Перетащи слова к фото — или тапни слово, потом фото':(isType?'Вспомни слово и впиши его':'Какое слово подходит?');document.getElementById('hint').style.color='var(--text-secondary)';const gc=document.getElementById('gameContent');gc.innerHTML='';if(isDrag){renderDragRound(r,gc)}else if(isType){renderTypeRound(r,gc)}else{renderNormalRound(r,gc)}startTimer()}
 
-        function renderNormalRound(r,container){container.innerHTML=`<div class="game-photo-wrap drop-zone" data-word="${esc(r.target.word)}"><img src="${r.target.dataUrl}" alt=""></div><div class="photo-prefix">${esc(r.target.prefix||'Я')}</div><div class="words-title">Выбери слово или перетащи его на фото:</div><div class="words-grid" id="wordsGrid"></div>`;const wg=document.getElementById('wordsGrid');r.words.forEach(w=>{const b=document.createElement('button');b.className='word-btn';b.textContent=w;b.dataset.word=w;b.onclick=()=>{if(Date.now()<suppressClickUntil)return;checkWord(w,b)};makeDraggable(b,{zoneSelector:'.drop-zone',tapSelect:false,onDrop:(el,zone)=>checkWord(el.dataset.word,el)});wg.appendChild(b)})}
+        function renderNormalRound(r,container){container.innerHTML=`<div class="drop-photo-center"><div class="game-photo-wrap drop-zone" data-word="${esc(r.target.word)}"><img src="${r.target.dataUrl}" alt=""><div class="drag-label">${esc(r.target.word)} ✅</div></div></div><div class="photo-prefix">${esc(r.target.prefix||'Я')}</div><div class="words-title">Выбери слово или перетащи его на фото:</div><div class="words-grid" id="wordsGrid"></div>`;const wg=document.getElementById('wordsGrid');r.words.forEach(w=>{const b=document.createElement('button');b.className='word-btn';b.textContent=w;b.dataset.word=w;b.onclick=()=>{if(Date.now()<suppressClickUntil)return;checkWord(w,b)};makeDraggable(b,{zoneSelector:'.drop-zone',tapSelect:false,onDrop:(el,zone)=>{
+            // Анимации как в раунде «Собери пары»: верно — фото зеленеет и подпись выезжает, промах — тряска
+            if(el.dataset.word===zone.dataset.word){zone.classList.add('correct')}
+            else{zone.classList.add('wrong');setTimeout(()=>zone.classList.remove('wrong'),450)}
+            return checkWord(el.dataset.word,el)}});wg.appendChild(b)})}
 
         // TYPE ROUND: фото + ручной ввод слова
         const norm=s=>String(s||'').trim().toLowerCase().replace(/ё/g,'е');
@@ -413,6 +452,8 @@
         function getSelfWords(){const seen=[];photos.forEach(p=>{const w=p.word;if(w&&!seen.includes(w))seen.push(w)});return seen}
         function dayAvg(d){const o=selfRatings[d];if(!o)return null;const vals=Object.values(o).filter(v=>v>0);if(!vals.length)return null;return vals.reduce((a,b)=>a+b,0)/vals.length}
         function prevRatingFor(word){const today=getToday();const dates=Object.keys(selfRatings).filter(d=>d<today).sort();for(let i=dates.length-1;i>=0;i--){const v=selfRatings[dates[i]][word];if(v)return v}return null}
+        // Статистика по конкретному слову за N дней: средняя оценка и число оценок
+        function wordStats(w,days){const cutoff=Date.now()-days*864e5;let sum=0,n=0;for(const[d,o]of Object.entries(selfRatings)){if(new Date(d+'T00:00:00Z').getTime()<cutoff)continue;const v=o[w];if(v){sum+=v;n++}}return n?{avg:sum/n,n:n}:null}
         function renderSelfTab(){
             const words=getSelfWords(),today=getToday(),todayData=selfRatings[today]||{};
             const sum=document.getElementById('selfSummary'),hist=document.getElementById('selfHistory'),list=document.getElementById('selfList');
@@ -424,27 +465,33 @@
             let sumHtml='<div class="self-summary-title">Как ты сегодня себя ощущаешь?</div><div class="self-summary-sub">Оцени соответствие каждому слову от 1 до 10</div>';
             if(tAvg!=null)sumHtml+='<div class="self-avg">Сегодня: <b>'+tAvg.toFixed(1)+'</b>'+(pAvg!=null?' <span class="'+(tAvg>=pAvg?'up':'down')+'">'+(tAvg>=pAvg?'▲':'▼')+' (было '+pAvg.toFixed(1)+')</span>':'')+'</div>';
             sum.innerHTML=sumHtml;
-            // История за 7 дней
-            const days=[];for(let i=6;i>=0;i--)days.push(new Date(Date.now()-i*864e5).toISOString().split('T')[0]);
-            hist.innerHTML='<div class="self-hist-title">Средняя самооценка по дням</div><div class="self-hist-row">'+days.map(d=>{const a=dayAvg(d);const h=a!=null?Math.max(4,Math.round(a*10)):0;return '<div class="self-hist-col"><div class="self-hist-bar-wrap"><div class="self-hist-bar'+(d===today?' today':'')+'" style="height:'+h+'%"></div></div><div class="self-hist-day">'+d.slice(8)+'.'+d.slice(5,7)+'</div></div>'}).join('')+'</div>';
-            // Список слов со слайдерами
+            // История: переключатель 7 / 30 дней
+            const days=[];for(let i=histDays-1;i>=0;i--)days.push(new Date(Date.now()-i*864e5).toISOString().split('T')[0]);
+            hist.innerHTML='<div class="self-hist-title">Средняя самооценка по дням</div>'+
+                '<div class="self-toggle"><button class="'+(histDays===7?'active':'')+'" onclick="histDays=7;renderSelfTab()">7 дней</button><button class="'+(histDays===30?'active':'')+'" onclick="histDays=30;renderSelfTab()">Месяц</button></div>'+
+                '<div class="self-hist-row">'+days.map(d=>{const a=dayAvg(d);const h=a!=null?Math.max(4,Math.round(a*10)):0;return '<div class="self-hist-col"><div class="self-hist-bar-wrap"><div class="self-hist-bar'+(d===today?' today':'')+'" style="height:'+h+'%"></div></div>'+(histDays===7?'<div class="self-hist-day">'+d.slice(8)+'.'+d.slice(5,7)+'</div>':'')+'</div>'}).join('')+'</div>'+
+                // Статистика по каждому слову за месяц
+                '<div class="self-hist-title" style="margin-top:14px">По словам за 30 дней</div>'+
+                (words.map(w=>{const s=wordStats(w,30);if(!s)return '';const pct=Math.round(s.avg*10);return '<div class="ws-row"><div class="ws-name">'+esc(w)+'</div><div class="ws-bar-wrap"><div class="ws-bar" style="width:'+pct+'%"></div></div><div class="ws-avg">'+s.avg.toFixed(1)+'</div><div class="ws-n">'+s.n+'×</div></div>'}).join('')||'<div class="self-prev" style="text-align:center">Пока нет оценок за месяц</div>');
+            // Список слов: слайдер + числовой ввод
             list.innerHTML='';
             words.forEach((w,i)=>{
                 const val=todayData[w]||0,prev=prevRatingFor(w);
                 const card=document.createElement('div');card.className='self-card';
-                card.innerHTML='<div class="self-head"><span class="self-word">'+esc(w)+'</span><span class="self-val" id="selfVal'+i+'">'+(val||'—')+'</span></div>'+
+                card.innerHTML='<div class="self-head"><span class="self-word">'+esc(w)+'</span><input type="number" class="self-num" id="selfNum'+i+'" min="1" max="10" step="1" placeholder="—" value="'+(val||'')+'"></div>'+
                     '<input type="range" min="1" max="10" step="1" value="'+(val||5)+'" class="self-slider" id="selfSlider'+i+'">'+
                     '<div class="self-scale"><span>1</span><span>5</span><span>10</span></div>'+
                     (prev!=null?'<div class="self-prev">прошлая оценка: '+prev+'</div>':'');
                 list.appendChild(card);
-                const slider=document.getElementById('selfSlider'+i),bubble=document.getElementById('selfVal'+i);
-                slider.addEventListener('input',()=>{bubble.textContent=slider.value});
-                slider.addEventListener('change',()=>{
+                const slider=document.getElementById('selfSlider'+i),num=document.getElementById('selfNum'+i);
+                const saveVal=v=>{v=Math.max(1,Math.min(10,Math.round(v)));
                     if(!selfRatings[today])selfRatings[today]={};
-                    selfRatings[today][w]=+slider.value;
+                    selfRatings[today][w]=v;
                     if(selfSaveTimer)clearTimeout(selfSaveTimer);
-                    selfSaveTimer=setTimeout(async()=>{await saveMeta('selfRatings',selfRatings);showSaved();renderSelfTab()},400);
-                });
+                    selfSaveTimer=setTimeout(async()=>{await saveMeta('selfRatings',selfRatings);showSaved();renderSelfTab()},400)};
+                slider.addEventListener('input',()=>{num.value=slider.value});
+                slider.addEventListener('change',()=>saveVal(+slider.value));
+                num.addEventListener('change',()=>{let v=parseInt(num.value,10);if(isNaN(v))v=5;v=Math.max(1,Math.min(10,v));num.value=v;slider.value=v;saveVal(v)});
             });
         }
 
