@@ -83,7 +83,7 @@
 
         /* Drop-анимации в обычном раунде — такие же, как в раунде «Собери пары» */
         .drop-photo-center{text-align:center;margin-bottom:12px}
-        .game-photo-wrap.drop-zone{display:inline-block;position:relative;margin-bottom:0}
+        .game-photo-wrap.drop-zone{display:inline-block;position:relative;margin-bottom:0;overflow:hidden;border-radius:16px}
         .game-photo-wrap .drag-label{position:absolute;bottom:0;left:0;right:0;background:rgba(46,204,113,.9);color:#fff;text-align:center;padding:8px;font-size:14px;font-weight:700;transform:translateY(100%);transition:transform .2s;border-radius:0 0 16px 16px;pointer-events:none}
         .game-photo-wrap.correct .drag-label{transform:translateY(0)}
         .game-photo-wrap.correct img{outline:4px solid var(--success);outline-offset:-4px}
@@ -103,6 +103,22 @@
         .ws-bar{height:100%;background:linear-gradient(90deg,var(--primary),#6ab0de);border-radius:5px;transition:width .3s}
         .ws-avg{width:32px;font-size:13px;font-weight:800;color:var(--primary);text-align:right}
         .ws-n{width:28px;font-size:11px;color:var(--text-secondary);text-align:right}
+
+        /* Степпер +/− вместо слайдера (слайдер задевался при скролле) */
+        .self-stepper{display:flex;align-items:center;gap:8px}
+        .self-step{width:46px;height:46px;border:1px solid var(--border);border-radius:12px;background:var(--bg);font-size:24px;font-weight:700;color:var(--primary);cursor:pointer;line-height:1;transition:all .15s}
+        .self-step:active{transform:scale(.92);background:var(--primary);color:#fff}
+        .self-stepper .self-num{flex:1;height:46px;font-size:18px}
+
+        /* Детальная статистика по дню */
+        .self-hist-col{cursor:pointer}
+        .self-hist-bar.sel{background:var(--warning)}
+        .self-date-row{display:flex;justify-content:center;margin-top:10px}
+        .self-date{padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text);font-size:13px;font-family:inherit}
+        .day-detail-row{display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px solid var(--border);font-size:14px}
+        .day-detail-row:last-child{border-bottom:none}
+        .dd-word{font-weight:700;color:var(--text)}
+        .dd-val{font-weight:800;color:var(--primary);font-size:15px}
 
         .counter{display:inline-block;background:var(--primary);color:#fff;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:12px}
         .counter.ready{background:var(--success)}
@@ -220,7 +236,7 @@
                 </div>
                 <h1>🧠 Ассоциации</h1>
                 <p>Загрузи фото и придумай к ним слова</p>
-                <div class="version">v0.10</div>
+                <div class="version">v0.11</div>
                 <div class="saved-badge" id="savedBadge">✅ Сохранено</div>
                 <div class="counter" id="counter">Добавлено: 0/4</div>
             </div>
@@ -283,7 +299,7 @@
 
         const OLD_DB='AssociationsGame',NEW_DB='AssociationsGame_v3',VER=1,STORE_P='photos',STORE_M='meta';
         let photos=[],streak={count:0,lastWinDate:null},winsTotal=0,saveTimer=null;
-        let selfRatings={},selfSaveTimer=null,histDays=7;
+        let selfRatings={},selfSaveTimer=null,histDays=7,detailDay=null;
         let game={rounds:[],current:0,processing:false,timer:null,timeLeft:0,maxTime:12,dragMatched:0,dragTotal:0};
         let dragSelected=null,suppressClickUntil=0;
 
@@ -454,6 +470,16 @@
         function prevRatingFor(word){const today=getToday();const dates=Object.keys(selfRatings).filter(d=>d<today).sort();for(let i=dates.length-1;i>=0;i--){const v=selfRatings[dates[i]][word];if(v)return v}return null}
         // Статистика по конкретному слову за N дней: средняя оценка и число оценок
         function wordStats(w,days){const cutoff=Date.now()-days*864e5;let sum=0,n=0;for(const[d,o]of Object.entries(selfRatings)){if(new Date(d+'T00:00:00Z').getTime()<cutoff)continue;const v=o[w];if(v){sum+=v;n++}}return n?{avg:sum/n,n:n}:null}
+        // Подробная статистика за конкретный день: все слова и их оценки
+        function buildDayDetail(d){
+            const o=selfRatings[d]||{};
+            const rows=Object.entries(o).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+            const dd=d.split('-').reverse().join('.');
+            let h='<div class="self-hist-title" style="margin-top:14px">Оценки за '+dd+'</div>';
+            if(!rows.length)h+='<div class="self-prev" style="text-align:center">В этот день оценок нет</div>';
+            else h+=rows.map(([w,v])=>'<div class="day-detail-row"><span class="dd-word">'+esc(w)+'</span><span class="dd-val">'+v+'</span></div>').join('');
+            return h;
+        }
         function renderSelfTab(){
             const words=getSelfWords(),today=getToday(),todayData=selfRatings[today]||{};
             const sum=document.getElementById('selfSummary'),hist=document.getElementById('selfHistory'),list=document.getElementById('selfList');
@@ -465,33 +491,36 @@
             let sumHtml='<div class="self-summary-title">Как ты сегодня себя ощущаешь?</div><div class="self-summary-sub">Оцени соответствие каждому слову от 1 до 10</div>';
             if(tAvg!=null)sumHtml+='<div class="self-avg">Сегодня: <b>'+tAvg.toFixed(1)+'</b>'+(pAvg!=null?' <span class="'+(tAvg>=pAvg?'up':'down')+'">'+(tAvg>=pAvg?'▲':'▼')+' (было '+pAvg.toFixed(1)+')</span>':'')+'</div>';
             sum.innerHTML=sumHtml;
-            // История: переключатель 7 / 30 дней
+            // История: переключатель 7 / 30 дней; тап по столбику — подробности за день
             const days=[];for(let i=histDays-1;i>=0;i--)days.push(new Date(Date.now()-i*864e5).toISOString().split('T')[0]);
-            hist.innerHTML='<div class="self-hist-title">Средняя самооценка по дням</div>'+
+            hist.innerHTML='<div class="self-hist-title">Средняя самооценка по дням — тапни столбик для деталей</div>'+
                 '<div class="self-toggle"><button class="'+(histDays===7?'active':'')+'" onclick="histDays=7;renderSelfTab()">7 дней</button><button class="'+(histDays===30?'active':'')+'" onclick="histDays=30;renderSelfTab()">Месяц</button></div>'+
-                '<div class="self-hist-row">'+days.map(d=>{const a=dayAvg(d);const h=a!=null?Math.max(4,Math.round(a*10)):0;return '<div class="self-hist-col"><div class="self-hist-bar-wrap"><div class="self-hist-bar'+(d===today?' today':'')+'" style="height:'+h+'%"></div></div>'+(histDays===7?'<div class="self-hist-day">'+d.slice(8)+'.'+d.slice(5,7)+'</div>':'')+'</div>'}).join('')+'</div>'+
+                '<div class="self-hist-row">'+days.map(d=>{const a=dayAvg(d);const h=a!=null?Math.max(4,Math.round(a*10)):0;const sel=detailDay===d?' sel':'';return '<div class="self-hist-col" onclick="detailDay=\''+d+'\';renderSelfTab()"><div class="self-hist-bar-wrap"><div class="self-hist-bar'+(d===today?' today':'')+sel+'" style="height:'+h+'%"></div></div>'+(histDays===7?'<div class="self-hist-day">'+d.slice(8)+'.'+d.slice(5,7)+'</div>':'')+'</div>'}).join('')+'</div>'+
+                '<div class="self-date-row"><input type="date" class="self-date" value="'+(detailDay||today)+'" max="'+today+'" onchange="detailDay=this.value;renderSelfTab()"></div>'+
+                (detailDay?buildDayDetail(detailDay):'')+
                 // Статистика по каждому слову за месяц
                 '<div class="self-hist-title" style="margin-top:14px">По словам за 30 дней</div>'+
                 (words.map(w=>{const s=wordStats(w,30);if(!s)return '';const pct=Math.round(s.avg*10);return '<div class="ws-row"><div class="ws-name">'+esc(w)+'</div><div class="ws-bar-wrap"><div class="ws-bar" style="width:'+pct+'%"></div></div><div class="ws-avg">'+s.avg.toFixed(1)+'</div><div class="ws-n">'+s.n+'×</div></div>'}).join('')||'<div class="self-prev" style="text-align:center">Пока нет оценок за месяц</div>');
-            // Список слов: слайдер + числовой ввод
+            // Список слов: степпер −/+/ввод числа (без слайдера — он задевался при скролле)
             list.innerHTML='';
             words.forEach((w,i)=>{
                 const val=todayData[w]||0,prev=prevRatingFor(w);
                 const card=document.createElement('div');card.className='self-card';
-                card.innerHTML='<div class="self-head"><span class="self-word">'+esc(w)+'</span><input type="number" class="self-num" id="selfNum'+i+'" min="1" max="10" step="1" placeholder="—" value="'+(val||'')+'"></div>'+
-                    '<input type="range" min="1" max="10" step="1" value="'+(val||5)+'" class="self-slider" id="selfSlider'+i+'">'+
-                    '<div class="self-scale"><span>1</span><span>5</span><span>10</span></div>'+
-                    (prev!=null?'<div class="self-prev">прошлая оценка: '+prev+'</div>':'');
+                card.innerHTML='<div class="self-head"><span class="self-word">'+esc(w)+'</span>'+(prev!=null?'<span class="self-prev">было: '+prev+'</span>':'')+'</div>'+
+                    '<div class="self-stepper"><button type="button" class="self-step" id="selfMinus'+i+'">−</button>'+
+                    '<input type="number" class="self-num" id="selfNum'+i+'" min="1" max="10" step="1" placeholder="—" value="'+(val||'')+'">'+
+                    '<button type="button" class="self-step" id="selfPlus'+i+'">+</button></div>';
                 list.appendChild(card);
-                const slider=document.getElementById('selfSlider'+i),num=document.getElementById('selfNum'+i);
+                const num=document.getElementById('selfNum'+i);
                 const saveVal=v=>{v=Math.max(1,Math.min(10,Math.round(v)));
                     if(!selfRatings[today])selfRatings[today]={};
                     selfRatings[today][w]=v;
                     if(selfSaveTimer)clearTimeout(selfSaveTimer);
                     selfSaveTimer=setTimeout(async()=>{await saveMeta('selfRatings',selfRatings);showSaved();renderSelfTab()},400)};
-                slider.addEventListener('input',()=>{num.value=slider.value});
-                slider.addEventListener('change',()=>saveVal(+slider.value));
-                num.addEventListener('change',()=>{let v=parseInt(num.value,10);if(isNaN(v))v=5;v=Math.max(1,Math.min(10,v));num.value=v;slider.value=v;saveVal(v)});
+                const cur=()=>{const v=parseInt(num.value,10);return isNaN(v)?5:v};
+                document.getElementById('selfMinus'+i).onclick=()=>{const v=Math.max(1,cur()-1);num.value=v;saveVal(v)};
+                document.getElementById('selfPlus'+i).onclick=()=>{const v=Math.min(10,cur()+1);num.value=v;saveVal(v)};
+                num.addEventListener('change',()=>{let v=parseInt(num.value,10);if(isNaN(v))v=5;v=Math.max(1,Math.min(10,v));num.value=v;saveVal(v)});
             });
         }
 
