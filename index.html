@@ -74,12 +74,14 @@
         .progress-dot.done{background:var(--success)}
         .progress-dot.retry{background:var(--warning)}
         .progress-dot.drag{background:linear-gradient(135deg,#9b59b6,#8e44ad)}
+        .progress-dot.type{background:linear-gradient(135deg,#e67e22,#d35400)}
 
         .hint{text-align:center;color:var(--text-secondary);font-size:14px;margin-bottom:12px;min-height:20px;font-weight:500}
 
         /* NORMAL ROUND */
         .game-photo-wrap{text-align:center;margin-bottom:12px}
         .game-photo-wrap img{max-width:100%;width:auto;height:auto;max-height:42vh;display:inline-block;border-radius:16px;box-shadow:var(--shadow);background:rgba(0,0,0,.04)}
+        .game-photo-wrap.highlight img{outline:4px solid var(--primary);outline-offset:-4px}
         .photo-prefix{text-align:center;font-size:28px;font-weight:800;color:var(--primary);margin-bottom:16px;letter-spacing:1px}
 
         /* DRAG ROUND */
@@ -102,7 +104,13 @@
 
         .words-title{text-align:center;color:var(--text-secondary);font-size:13px;margin-bottom:10px;font-weight:600}
         .words-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-        .word-btn{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:18px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center;color:var(--text)}
+        .word-btn{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:18px;font-size:16px;font-weight:700;cursor:pointer;transition:all .15s;text-align:center;color:var(--text);touch-action:none;user-select:none}
+
+        /* TYPE ROUND */
+        .type-input{width:100%;padding:14px;border:2px solid var(--border);border-radius:14px;font-size:17px;font-weight:600;text-align:center;outline:none;background:var(--surface);color:var(--text);margin-bottom:12px;transition:all .2s}
+        .type-input:focus{border-color:var(--primary)}
+        .type-input.correct{border-color:var(--success);background:rgba(46,204,113,.1);color:var(--success)}
+        .type-input.wrong{border-color:var(--error);background:rgba(231,76,60,.1);color:var(--error);animation:shake .4s}
         .word-btn:active{transform:scale(.96)}
         .word-btn.correct{border-color:var(--success);background:rgba(46,204,113,.1);color:var(--success)}
         .word-btn.wrong{border-color:var(--error);background:rgba(231,76,60,.1);color:var(--error)}
@@ -161,7 +169,7 @@
                 </div>
                 <h1>🧠 Ассоциации</h1>
                 <p>Загрузи фото и придумай к ним слова</p>
-                <div class="version">v0.6</div>
+                <div class="version">v0.7</div>
                 <div class="saved-badge" id="savedBadge">✅ Сохранено</div>
                 <div class="counter" id="counter">Добавлено: 0/4</div>
             </div>
@@ -310,11 +318,23 @@
         function startGame(){if(photos.length<4)return;const total=photos.length+5;game.rounds=[];let deck=[...photos].sort(()=>Math.random()-.5);let deckIdx=0;let lastId=null;const favorites=photos.filter(p=>p.favorite);
             // Для drag-раундов нужны фото с уникальными словами, иначе пары неоднозначны
             const seen={},uniquePhotos=photos.filter(p=>{if(seen[p.word])return false;seen[p.word]=1;return true});
-            let normalCount=0;for(let i=0;i<total;i++){let target;const isDrag=uniquePhotos.length>=4&&((normalCount>=5&&Math.random()<.5)||(normalCount>=8));if(isDrag){normalCount=0;const pool=[...uniquePhotos].sort(()=>Math.random()-.5).slice(0,4);const words=pool.map(p=>p.word).sort(()=>Math.random()-.5);game.rounds.push({type:'drag',photos:pool,words:words,isRetry:false});continue}normalCount++;const favAvail=favorites.filter(p=>p.id!==lastId);if(favAvail.length>0&&Math.random()<.25){target=favAvail[Math.floor(Math.random()*favAvail.length)]}else{if(deckIdx>=deck.length){deck=[...photos].sort(()=>Math.random()-.5);deckIdx=0}let safety=0;while(deck[deckIdx].id===lastId&&deck.length>1&&safety<deck.length){deckIdx++;safety++;if(deckIdx>=deck.length){deck=[...photos].sort(()=>Math.random()-.5);deckIdx=0}}target=deck[deckIdx];deckIdx++}lastId=target.id;const other=photos.filter(p=>p.id!==target.id).map(p=>p.word);const dist=[];while(dist.length<3&&other.length>0){const w=other[Math.floor(Math.random()*other.length)];if(!dist.includes(w)&&w!==target.word)dist.push(w)}while(dist.length<3)dist.push('???');const words=[target.word,...dist].sort(()=>Math.random()-.5);game.rounds.push({type:'normal',target:target,words:words,isRetry:false})}game.current=0;game.processing=false;document.getElementById('setupScreen').style.display='none';document.getElementById('gameScreen').style.display='block';startRound()}
+            let normalCount=0;for(let i=0;i<total;i++){let target;const isDrag=uniquePhotos.length>=4&&((normalCount>=5&&Math.random()<.5)||(normalCount>=8));if(isDrag){normalCount=0;const pool=[...uniquePhotos].sort(()=>Math.random()-.5).slice(0,4);const words=pool.map(p=>p.word).sort(()=>Math.random()-.5);game.rounds.push({type:'drag',photos:pool,words:words,isRetry:false});continue}normalCount++;const favAvail=favorites.filter(p=>p.id!==lastId);if(favAvail.length>0&&Math.random()<.25){target=favAvail[Math.floor(Math.random()*favAvail.length)]}else{if(deckIdx>=deck.length){deck=[...photos].sort(()=>Math.random()-.5);deckIdx=0}let safety=0;while(deck[deckIdx].id===lastId&&deck.length>1&&safety<deck.length){deckIdx++;safety++;if(deckIdx>=deck.length){deck=[...photos].sort(()=>Math.random()-.5);deckIdx=0}}target=deck[deckIdx];deckIdx++}lastId=target.id;if(Math.random()<0.3){game.rounds.push({type:'type',target:target,isRetry:false});continue}const other=photos.filter(p=>p.id!==target.id).map(p=>p.word);const dist=[];while(dist.length<3&&other.length>0){const w=other[Math.floor(Math.random()*other.length)];if(!dist.includes(w)&&w!==target.word)dist.push(w)}while(dist.length<3)dist.push('???');const words=[target.word,...dist].sort(()=>Math.random()-.5);game.rounds.push({type:'normal',target:target,words:words,isRetry:false})}game.current=0;game.processing=false;document.getElementById('setupScreen').style.display='none';document.getElementById('gameScreen').style.display='block';startRound()}
 
-        function startRound(){if(game.current>=game.rounds.length){showWin();return}game.processing=false;const r=game.rounds[game.current];const isDrag=r.type==='drag';game.maxTime=isDrag?20:12;game.timeLeft=game.maxTime;document.getElementById('roundBadge').textContent='Раунд '+(game.current+1)+' / '+game.rounds.length;renderProgress();document.getElementById('gameTitle').textContent=isDrag?'🧩 Собери пары':'Найди слово';document.getElementById('hint').textContent=isDrag?'Перетащи слова к фото — или тапни слово, потом фото':'Какое слово подходит?';document.getElementById('hint').style.color='var(--text-secondary)';const gc=document.getElementById('gameContent');gc.innerHTML='';if(isDrag){renderDragRound(r,gc)}else{renderNormalRound(r,gc)}startTimer()}
+        function startRound(){if(game.current>=game.rounds.length){showWin();return}game.processing=false;const r=game.rounds[game.current];const isDrag=r.type==='drag',isType=r.type==='type';game.maxTime=(isDrag||isType)?20:12;game.timeLeft=game.maxTime;document.getElementById('roundBadge').textContent='Раунд '+(game.current+1)+' / '+game.rounds.length;renderProgress();document.getElementById('gameTitle').textContent=isDrag?'🧩 Собери пары':(isType?'✍️ Введи слово':'Найди слово');document.getElementById('hint').textContent=isDrag?'Перетащи слова к фото — или тапни слово, потом фото':(isType?'Вспомни слово и впиши его':'Какое слово подходит?');document.getElementById('hint').style.color='var(--text-secondary)';const gc=document.getElementById('gameContent');gc.innerHTML='';if(isDrag){renderDragRound(r,gc)}else if(isType){renderTypeRound(r,gc)}else{renderNormalRound(r,gc)}startTimer()}
 
-        function renderNormalRound(r,container){container.innerHTML=`<div class="game-photo-wrap"><img src="${r.target.dataUrl}" alt=""></div><div class="photo-prefix">${esc(r.target.prefix||'Я')}</div><div class="words-title">Выбери слово:</div><div class="words-grid" id="wordsGrid"></div>`;const wg=document.getElementById('wordsGrid');r.words.forEach(w=>{const b=document.createElement('button');b.className='word-btn';b.textContent=w;b.dataset.word=w;b.onclick=()=>checkWord(w,b);wg.appendChild(b)})}
+        function renderNormalRound(r,container){container.innerHTML=`<div class="game-photo-wrap drop-zone" data-word="${esc(r.target.word)}"><img src="${r.target.dataUrl}" alt=""></div><div class="photo-prefix">${esc(r.target.prefix||'Я')}</div><div class="words-title">Выбери слово или перетащи его на фото:</div><div class="words-grid" id="wordsGrid"></div>`;const wg=document.getElementById('wordsGrid');r.words.forEach(w=>{const b=document.createElement('button');b.className='word-btn';b.textContent=w;b.dataset.word=w;b.onclick=()=>{if(Date.now()<suppressClickUntil)return;checkWord(w,b)};makeDraggable(b,{zoneSelector:'.drop-zone',tapSelect:false,onDrop:(el,zone)=>checkWord(el.dataset.word,el)});wg.appendChild(b)})}
+
+        // TYPE ROUND: фото + ручной ввод слова
+        const norm=s=>String(s||'').trim().toLowerCase().replace(/ё/g,'е');
+        function renderTypeRound(r,container){container.innerHTML=`<div class="game-photo-wrap"><img src="${r.target.dataUrl}" alt=""></div><div class="photo-prefix">${esc(r.target.prefix||'Я')}</div><input type="text" id="typeInput" class="type-input" placeholder="Впиши слово..." autocomplete="off" autocapitalize="none" autocorrect="off"><button class="start-btn" id="typeCheckBtn">Проверить</button>`;
+            const inp=document.getElementById('typeInput');
+            inp.addEventListener('keydown',e=>{if(e.key==='Enter')checkTyped()});
+            document.getElementById('typeCheckBtn').onclick=()=>checkTyped();
+            setTimeout(()=>{const i2=document.getElementById('typeInput');if(i2)i2.focus()},200)}
+        function checkTyped(){if(game.processing)return;const r=game.rounds[game.current];const inp=document.getElementById('typeInput');if(!inp)return;const val=norm(inp.value);if(!val)return;
+            clearInterval(game.timer);game.processing=true;inp.disabled=true;document.getElementById('typeCheckBtn').disabled=true;
+            if(val===norm(r.target.word)){inp.classList.add('correct');document.getElementById('hint').textContent='✅ '+(r.target.prefix||'Я')+' '+r.target.word+'!';document.getElementById('hint').style.color='var(--success)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');setTimeout(()=>{game.current++;startRound()},900)}
+            else{inp.classList.add('wrong');document.getElementById('hint').textContent='❌ Правильный ответ: «'+r.target.word+'». Раунд повторится позже';document.getElementById('hint').style.color='var(--error)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');scheduleRetry();setTimeout(()=>{game.current++;startRound()},1600)}}
 
         function renderDragRound(r,container){game.dragMatched=0;game.dragTotal=4;dragSelected=null;const shuffledWords=[...r.words].sort(()=>Math.random()-.5);let html=`<div class="drag-grid" id="dragGrid">`;r.photos.forEach((p,idx)=>{html+=`<div class="drag-target" data-index="${idx}" data-word="${esc(p.word)}" data-id="${p.id}"><img src="${p.dataUrl}" alt=""><div class="drag-label">${esc(p.word)}</div></div>`});html+=`</div><div class="words-title">Перетащи слово на фото — или тапни слово, потом фото:</div><div class="drag-words" id="dragWords"></div>`;container.innerHTML=html;
             container.querySelectorAll('.drag-target').forEach(t=>{t.addEventListener('click',()=>{if(!dragSelected||game.processing)return;attemptMatch(t,dragSelected)})});
@@ -325,12 +345,15 @@
             if(correctWord===draggedWord){dropZone.classList.add('correct');el.classList.add('matched');el.classList.remove('selected');if(dragSelected===el)dragSelected=null;game.dragMatched++;if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');if(game.dragMatched>=game.dragTotal){clearInterval(game.timer);setTimeout(()=>{game.current++;startRound()},600)}}
             else{dropZone.classList.add('wrong');if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');setTimeout(()=>dropZone.classList.remove('wrong'),400)}}
 
-        function makeDraggable(el){let startX,startY,dragging=false,moved=false,clone=null,lastZone=null;
+        // Универсальное перетаскивание: opts.zoneSelector — что считать целью,
+        // opts.tapSelect — включать ли режим тапов (выбор слова), opts.onDrop — что делать при дропе
+        function makeDraggable(el,opts){opts=opts||{};const zoneSelector=opts.zoneSelector||'.drag-target';const tapSelect=opts.tapSelect!==false;const onDrop=opts.onDrop||attemptMatch;
+            let startX,startY,dragging=false,moved=false,clone=null,lastZone=null;
             // FIX: в touchend список e.touches УЖЕ ПУСТОЙ, но сам объект существует (truthy) —
             // нельзя писать e.touches?e.touches[0]:..., иначе берётся undefined и обработчик падает.
             // changedTouches надёжно содержит точку во всех touch-событиях.
             const getPoint=e=>{if(e.changedTouches&&e.changedTouches.length)return e.changedTouches[0];if(e.touches&&e.touches.length)return e.touches[0];return e};
-            const zoneAt=(x,y)=>{const n=document.elementFromPoint(x,y);return n?n.closest('.drag-target'):null};
+            const zoneAt=(x,y)=>{const n=document.elementFromPoint(x,y);return n?n.closest(zoneSelector):null};
             let rect=null;
             const ensureClone=()=>{if(clone)return;clone=el.cloneNode(true);clone.style.position='fixed';clone.style.left=rect.left+'px';clone.style.top=rect.top+'px';clone.style.width=rect.width+'px';clone.style.margin='0';clone.style.zIndex='9999';clone.style.pointerEvents='none';
                 // FIX: убираем transition у клона — иначе каждое движение анимировалось 150мс и слово «плыло» за пальцем
@@ -351,7 +374,7 @@
                 const t=getPoint(e);if(!t)return;
                 if(moved)suppressClickUntil=Date.now()+300;else return;
                 const dropZone=zoneAt(t.clientX,t.clientY);if(!dropZone)return;
-                attemptMatch(dropZone,el)};
+                onDrop(el,dropZone)};
             const start=e=>{if(game.processing||el.classList.contains('matched'))return;
                 // preventDefault только для мыши (от выделения текста). Для тача не нужен:
                 // touch-action:none на .drag-word сам запрещает скролл, а preventDefault
@@ -366,12 +389,12 @@
             el.addEventListener('touchcancel',onEnd);
             el.addEventListener('mousedown',start);
             // Режим тапов: тап по слову выбирает его, тап по фото — совмещает
-            el.addEventListener('click',()=>{if(Date.now()<suppressClickUntil||game.processing||el.classList.contains('matched'))return;
+            el.addEventListener('click',()=>{if(!tapSelect||Date.now()<suppressClickUntil||game.processing||el.classList.contains('matched'))return;
                 if(dragSelected===el){el.classList.remove('selected');dragSelected=null;return}
                 if(dragSelected)dragSelected.classList.remove('selected');
                 dragSelected=el;el.classList.add('selected');if(tg.HapticFeedback&&tg.HapticFeedback.selectionChanged)tg.HapticFeedback.selectionChanged()})}
 
-        function renderProgress(){const b=document.getElementById('progressBar');b.innerHTML='';game.rounds.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';if(i<game.current)d.classList.add('done');else if(i===game.current)d.classList.add('active');if(r.isRetry)d.style.background='#f39c12';if(r.type==='drag'){d.classList.add('drag')}b.appendChild(d)})}
+        function renderProgress(){const b=document.getElementById('progressBar');b.innerHTML='';game.rounds.forEach((r,i)=>{const d=document.createElement('div');d.className='progress-dot';if(i<game.current)d.classList.add('done');else if(i===game.current)d.classList.add('active');if(r.isRetry)d.style.background='#f39c12';if(r.type==='drag'){d.classList.add('drag')}if(r.type==='type'){d.classList.add('type')}b.appendChild(d)})}
 
         function startTimer(){clearInterval(game.timer);const f=document.getElementById('timerFill');f.style.width='100%';f.className='timer-fill';game.timer=setInterval(()=>{game.timeLeft-=.1;const p=Math.max(0,(game.timeLeft/game.maxTime)*100);f.style.width=p+'%';if(game.timeLeft<=game.maxTime*.4)f.classList.add('warning');if(game.timeLeft<=game.maxTime*.2)f.classList.add('danger');if(game.timeLeft<=0){clearInterval(game.timer);handleTimeout()}},100)}
 
