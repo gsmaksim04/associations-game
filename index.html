@@ -53,6 +53,34 @@
         .reset-btn{width:100%;padding:12px;background:transparent;color:var(--text-secondary);border:1px solid var(--border);border-radius:14px;font-size:14px;font-weight:600;cursor:pointer}
         .reset-btn:active{background:rgba(0,0,0,.03)}
 
+        .transfer-row{display:flex;gap:10px;margin-bottom:10px}
+        .transfer-btn{flex:1;padding:12px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:14px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+        .transfer-btn:active{transform:scale(.97);border-color:var(--primary);color:var(--primary)}
+
+        /* SELF-RATING (Прогресс) */
+        .self-summary{background:var(--surface);border-radius:16px;padding:16px;box-shadow:var(--shadow);margin-bottom:12px;text-align:center}
+        .self-summary-title{font-size:16px;font-weight:700;margin-bottom:4px}
+        .self-summary-sub{font-size:13px;color:var(--text-secondary)}
+        .self-avg{font-size:15px;margin-top:10px;color:var(--text)}
+        .self-avg .up{color:var(--success);font-weight:700}
+        .self-avg .down{color:var(--error);font-weight:700}
+        .self-history{background:var(--surface);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:14px}
+        .self-hist-title{font-size:12px;color:var(--text-secondary);text-align:center;margin-bottom:10px;font-weight:600}
+        .self-hist-row{display:flex;gap:8px;align-items:flex-end;justify-content:space-between}
+        .self-hist-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+        .self-hist-bar-wrap{height:60px;width:100%;display:flex;align-items:flex-end;background:rgba(0,0,0,.05);border-radius:6px;overflow:hidden}
+        .self-hist-bar{width:100%;background:var(--primary);border-radius:6px 6px 0 0;min-height:0;transition:height .3s}
+        .self-hist-bar.today{background:var(--success)}
+        .self-hist-day{font-size:10px;color:var(--text-secondary)}
+        .self-card{background:var(--surface);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:10px}
+        .self-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+        .self-word{font-size:16px;font-weight:700;color:var(--text)}
+        .self-val{font-size:18px;font-weight:800;color:var(--primary);min-width:28px;text-align:right}
+        .self-slider{width:100%;accent-color:var(--primary);height:28px;cursor:pointer}
+        .self-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--text-secondary);margin-top:2px}
+        .self-prev{font-size:12px;color:var(--text-secondary);margin-top:6px}
+        .self-empty{text-align:center;color:var(--text-secondary);padding:30px 16px;font-size:14px;line-height:1.5}
+
         .counter{display:inline-block;background:var(--primary);color:#fff;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:600;margin-bottom:12px}
         .counter.ready{background:var(--success)}
 
@@ -169,15 +197,14 @@
                 </div>
                 <h1>🧠 Ассоциации</h1>
                 <p>Загрузи фото и придумай к ним слова</p>
-                <div class="version">v0.7.1</div>
+                <div class="version">v0.9</div>
                 <div class="saved-badge" id="savedBadge">✅ Сохранено</div>
                 <div class="counter" id="counter">Добавлено: 0/4</div>
             </div>
 
             <div class="nav-tabs">
                 <button class="nav-tab active" data-tab="home" onclick="switchTab('home')">🏠 Главная</button>
-                <button class="nav-tab" data-tab="words" onclick="switchTab('words')">💡 Слова</button>
-                <button class="nav-tab" data-tab="training" onclick="switchTab('training')">⚡ Тренировка</button>
+                <button class="nav-tab" data-tab="progress" onclick="switchTab('progress')">📊 Прогресс</button>
             </div>
 
             <div class="tab-content active" id="tab-home">
@@ -188,38 +215,18 @@
                 </div>
                 <input type="file" id="fileInput" accept="image/*" multiple onchange="handleFiles(this.files)">
                 <button class="start-btn" id="startBtn" disabled onclick="startGame()">▶️ Начать игру</button>
+                <div class="transfer-row">
+                    <button class="transfer-btn" onclick="exportData()">📤 Экспорт</button>
+                    <button class="transfer-btn" onclick="document.getElementById('importInput').click()">📥 Импорт</button>
+                    <input type="file" id="importInput" accept=".json,application/json" style="display:none" onchange="importData(this)">
+                </div>
                 <button class="reset-btn" id="resetBtn" style="display:none" onclick="resetAll()">🗑 Очистить всё</button>
             </div>
 
-            <div class="tab-content" id="tab-words">
-                <div class="word-bank">
-                    <div class="word-bank-hint">Нажми на слово — оно подставится в первое пустое поле на главной (или скопируется, если пустых нет)</div>
-                    <div id="wordBank"></div>
-                </div>
-            </div>
-
-            <div class="tab-content" id="tab-training">
-                <div id="trainingIntro" class="training-preview">
-                    <p>Быстрое кондиционирование по методу Galatea.<br>20 пар «фото + слово». Жми ✅ если это про тебя.</p>
-                    <button class="start-btn" onclick="startTraining()">⚡ Начать тренировку</button>
-                </div>
-                <div id="trainingGame" style="display:none">
-                    <div class="training-progress" id="trainingProgress">1 / 20</div>
-                    <div class="training-card">
-                        <img id="trainingImg" src="" alt="">
-                        <div class="training-word" id="trainingWord"></div>
-                        <div class="training-buttons">
-                            <button class="training-btn no" onclick="trainingAnswer(false)">❌</button>
-                            <button class="training-btn yes" onclick="trainingAnswer(true)">✅</button>
-                        </div>
-                    </div>
-                </div>
-                <div id="trainingDone" style="display:none;text-align:center;padding:40px 20px">
-                    <div style="font-size:48px;margin-bottom:12px">🔥</div>
-                    <h3>Тренировка завершена!</h3>
-                    <p style="color:var(--text-secondary);margin:12px 0 20px">Ты закрепил ассоциации. Возвращайся завтра!</p>
-                    <button class="start-btn" onclick="switchTab('home')">🏠 На главную</button>
-                </div>
+            <div class="tab-content" id="tab-progress">
+                <div class="self-summary" id="selfSummary"></div>
+                <div class="self-history" id="selfHistory"></div>
+                <div id="selfList"></div>
             </div>
         </div>
 
@@ -252,11 +259,10 @@
         try{tg.ready();tg.expand()}catch(e){}
 
         const OLD_DB='AssociationsGame',NEW_DB='AssociationsGame_v3',VER=1,STORE_P='photos',STORE_M='meta';
-        let photos=[],streak={count:0,lastWinDate:null},winsTotal=0,saveTimer=null,lastWordInput=null;
+        let photos=[],streak={count:0,lastWinDate:null},winsTotal=0,saveTimer=null;
+        let selfRatings={},selfSaveTimer=null;
         let game={rounds:[],current:0,processing:false,timer:null,timeLeft:0,maxTime:12,dragMatched:0,dragTotal:0};
-        let training={items:[],current:0,total:20};
         let dragSelected=null,suppressClickUntil=0;
-        const wordBank={'Followership':['инициативный','преданный','ответственный','командный','надёжный','лояльный','послушный','исполнительный'],'Уверенность':['сильный','уверенный','смелый','решительный','достойный','неповторимый','харизматичный'],'Спокойствие':['спокойный','уравновешенный','мудрый','терпеливый','внимательный','осознанный'],'Энергия':['энергичный','активный','целеустремлённый','продуктивный','динамичный','воодушевлённый']};
 
         // Тёмная тема: подхватываем цвета из Telegram и реагируем на смену темы
         function applyTheme(){const p=tg.themeParams||{};const r=document.documentElement.style;
@@ -277,7 +283,7 @@
         async function loadMeta(k,def){const d=await openDB(NEW_DB),t=d.transaction(STORE_M,'readonly');return new Promise(res=>{const r=t.objectStore(STORE_M).get(k);r.onsuccess=()=>res(r.result?JSON.parse(r.result.value):def);r.onerror=()=>res(def)})}
         async function clearPhotos(){const d=await openDB(NEW_DB);await d.transaction(STORE_P,'readwrite').objectStore(STORE_P).clear()}
 
-        async function init(){let ep=await loadPhotos()||[],em=await loadMeta('streak',null);if(!ep.length&&!em){const m=await migrate();if(m.photos.length){photos=m.photos;await savePhotos()}if(m.meta){const s=m.meta.find(x=>x.key==='streak');if(s){streak=JSON.parse(s.value);await saveMeta('streak',streak)}}}photos=await loadPhotos()||[];photos.forEach(p=>{if(!p.prefix)p.prefix='Я';if(!p.favorite)p.favorite=false});streak=await loadMeta('streak',{count:0,lastWinDate:null});winsTotal=await loadMeta('winsTotal',0);checkStreak();renderStats();renderPhotos();renderWordBank()}
+        async function init(){let ep=await loadPhotos()||[],em=await loadMeta('streak',null);if(!ep.length&&!em){const m=await migrate();if(m.photos.length){photos=m.photos;await savePhotos()}if(m.meta){const s=m.meta.find(x=>x.key==='streak');if(s){streak=JSON.parse(s.value);await saveMeta('streak',streak)}}}photos=await loadPhotos()||[];photos.forEach(p=>{if(!p.prefix)p.prefix='Я';if(!p.favorite)p.favorite=false});streak=await loadMeta('streak',{count:0,lastWinDate:null});winsTotal=await loadMeta('winsTotal',0);selfRatings=await loadMeta('selfRatings',{});checkStreak();renderStats();renderPhotos()}
         function getToday(){return new Date().toISOString().split('T')[0]}
         function getYesterday(){return new Date(Date.now()-864e5).toISOString().split('T')[0]}
         function checkStreak(){const t=getToday(),y=getYesterday();if(!streak.lastWinDate)streak.count=0;else if(streak.lastWinDate!==t&&streak.lastWinDate!==y)streak.count=0;renderStats()}
@@ -285,7 +291,7 @@
         function renderStats(){const w=document.getElementById('winsBadge');if(winsTotal>0){w.textContent='🏆 '+winsTotal;w.classList.add('active')}else w.classList.remove('active');const s=document.getElementById('streakBadge');if(streak.count>0){s.textContent='🔥 '+streak.count;s.classList.add('active')}else s.classList.remove('active')}
 
         async function onWin(){const t=getToday(),y=getYesterday();if(streak.lastWinDate!==t){streak.count=(streak.lastWinDate===y)?streak.count+1:1}streak.lastWinDate=t;await saveMeta('streak',streak);winsTotal++;await saveMeta('winsTotal',winsTotal);renderStats()}
-        function switchTab(tab){document.querySelectorAll('.nav-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id==='tab-'+tab))}
+        function switchTab(tab){document.querySelectorAll('.nav-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));document.querySelectorAll('.tab-content').forEach(c=>c.classList.toggle('active',c.id==='tab-'+tab));if(tab==='progress')renderSelfTab()}
 
         // Сжатие фото перед сохранением: уменьшаем до 1024px и конвертируем в JPEG,
         // чтобы не упираться в квоту IndexedDB (полноразмерный DataURL весит в разы больше)
@@ -295,22 +301,13 @@
         function scheduleSave(){if(saveTimer)clearTimeout(saveTimer);saveTimer=setTimeout(()=>savePhotos(),600)}
         function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
         function updateStartBtn(){document.getElementById('startBtn').disabled=!(photos.length>=4&&photos.every(p=>p.word.length>0))}
-        function renderPhotos(){const g=document.getElementById('photoGrid');g.innerHTML='';photos.forEach((p,i)=>{const c=document.createElement('div');c.className='photo-card';c.innerHTML=`<button class="fav-btn ${p.favorite?'active':''}" onclick="toggleFavorite(${i},event)">★</button><button class="delete-btn" onclick="deletePhoto(${i})">×</button><div class="img-wrap"><img src="${p.dataUrl}" alt=""></div><input type="text" class="word-input" placeholder="Слово..." value="${esc(p.word)}" onfocus="lastWordInput=this" oninput="updateWord(${i},this.value)"><input type="text" class="word-input prefix-input" placeholder="Подсказка (Я)..." value="${esc(p.prefix||'Я')}" oninput="updatePrefix(${i},this.value)">`;g.appendChild(c)});const c=document.getElementById('counter');c.textContent='Добавлено: '+photos.length+'/4';c.classList.toggle('ready',photos.length>=4);updateStartBtn();document.getElementById('resetBtn').style.display=photos.length>0?'block':'none'}
+        function renderPhotos(){const g=document.getElementById('photoGrid');g.innerHTML='';photos.forEach((p,i)=>{const c=document.createElement('div');c.className='photo-card';c.innerHTML=`<button class="fav-btn ${p.favorite?'active':''}" onclick="toggleFavorite(${i},event)">★</button><button class="delete-btn" onclick="deletePhoto(${i})">×</button><div class="img-wrap"><img src="${p.dataUrl}" alt=""></div><input type="text" class="word-input" placeholder="Слово..." value="${esc(p.word)}" oninput="updateWord(${i},this.value)"><input type="text" class="word-input prefix-input" placeholder="Подсказка (Я)..." value="${esc(p.prefix||'Я')}" oninput="updatePrefix(${i},this.value)">`;g.appendChild(c)});const c=document.getElementById('counter');c.textContent='Добавлено: '+photos.length+'/4';c.classList.toggle('ready',photos.length>=4);updateStartBtn();document.getElementById('resetBtn').style.display=photos.length>0?'block':'none'}
         function updateWord(i,v){photos[i].word=v.trim();updateStartBtn();scheduleSave()}
         function updatePrefix(i,v){photos[i].prefix=v.trim();scheduleSave()}
         function toggleFavorite(i,e){e.stopPropagation();photos[i].favorite=!photos[i].favorite;renderPhotos();scheduleSave()}
         function deletePhoto(i){if(!confirm('Удалить это фото?'))return;photos.splice(i,1);renderPhotos();scheduleSave()}
-        async function resetAll(){if(!confirm('Удалить все фото, слова, стрик и победы?'))return;photos=[];streak={count:0,lastWinDate:null};winsTotal=0;await clearPhotos();await saveMeta('streak',streak);await saveMeta('winsTotal',0);renderStats();renderPhotos()}
+        async function resetAll(){if(!confirm('Удалить все фото, слова, стрик, победы и самооценки?'))return;photos=[];streak={count:0,lastWinDate:null};winsTotal=0;selfRatings={};await clearPhotos();await saveMeta('streak',streak);await saveMeta('winsTotal',0);await saveMeta('selfRatings',selfRatings);renderStats();renderPhotos()}
         function showSaved(){const b=document.getElementById('savedBadge');b.classList.add('show');setTimeout(()=>b.classList.remove('show'),1500)}
-        function renderWordBank(){const c=document.getElementById('wordBank');c.innerHTML='';for(const[cat,words]of Object.entries(wordBank)){const d=document.createElement('div');d.className='word-category';d.innerHTML=`<h4>${esc(cat)}</h4>`;const ch=document.createElement('div');ch.className='word-chips';words.forEach(w=>{const b=document.createElement('button');b.className='word-chip';b.textContent=w;b.onclick=()=>copyWord(w);ch.appendChild(b)});d.appendChild(ch);c.appendChild(d)}}
-
-        // Тап по слову из банка: подставляем в первое пустое поле (или в поле в фокусе),
-        // и только если всё заполнено — копируем в буфер обмена
-        function copyWord(w){let idx=-1;
-            if(lastWordInput&&document.contains(lastWordInput)&&!lastWordInput.value){const cards=[...document.querySelectorAll('.photo-card')];idx=cards.indexOf(lastWordInput.closest('.photo-card'))}
-            if(idx<0)idx=photos.findIndex(p=>!p.word);
-            if(idx>=0){photos[idx].word=w;renderPhotos();scheduleSave();switchTab('home');showToast('Слово «'+w+'» подставлено ✍️')}
-            else{if(navigator.clipboard)navigator.clipboard.writeText(w);showToast('Все поля заполнены — «'+w+'» скопировано')}}
 
         function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
         function exitGame(){clearInterval(game.timer);document.getElementById('gameScreen').style.display='none';document.getElementById('setupScreen').style.display='block';switchTab('home')}
@@ -348,18 +345,14 @@
         // Универсальное перетаскивание: opts.zoneSelector — что считать целью,
         // opts.tapSelect — включать ли режим тапов (выбор слова), opts.onDrop — что делать при дропе.
         // Конвенция: onDrop вызывается как onDrop(draggedElement, dropZone) и возвращает true при успехе.
-        // FIX v0.7.1: раньше дефолтом был сам attemptMatch — из-за другого порядка аргументов
-        // классы correct/matched вешались НАОБОРОТ (на слово и фото соответственно).
         function makeDraggable(el,opts){opts=opts||{};const zoneSelector=opts.zoneSelector||'.drag-target';const tapSelect=opts.tapSelect!==false;const onDrop=opts.onDrop||((draggedEl,zone)=>attemptMatch(zone,draggedEl));
             let startX,startY,dragging=false,moved=false,clone=null,lastZone=null;
-            // FIX: в touchend список e.touches УЖЕ ПУСТОЙ, но сам объект существует (truthy) —
-            // нельзя писать e.touches?e.touches[0]:..., иначе берётся undefined и обработчик падает.
+            // В touchend список e.touches УЖЕ ПУСТОЙ, но сам объект существует (truthy) —
             // changedTouches надёжно содержит точку во всех touch-событиях.
             const getPoint=e=>{if(e.changedTouches&&e.changedTouches.length)return e.changedTouches[0];if(e.touches&&e.touches.length)return e.touches[0];return e};
             const zoneAt=(x,y)=>{const n=document.elementFromPoint(x,y);return n?n.closest(zoneSelector):null};
             let rect=null;
             const ensureClone=()=>{if(clone)return;clone=el.cloneNode(true);clone.style.position='fixed';clone.style.left=rect.left+'px';clone.style.top=rect.top+'px';clone.style.width=rect.width+'px';clone.style.margin='0';clone.style.zIndex='9999';clone.style.pointerEvents='none';
-                // FIX: убираем transition у клона — иначе каждое движение анимировалось 150мс и слово «плыло» за пальцем
                 clone.style.transition='none';clone.style.transform='translate(0px,0px)';clone.style.willChange='transform';
                 document.body.appendChild(clone);el.style.opacity='0.3'};
             const onMove=e=>{if(!dragging)return;if(e.cancelable)e.preventDefault();const t=getPoint(e);if(!t)return;
@@ -367,7 +360,7 @@
                 // Клон создаётся только когда палец реально сдвинулся — при простом тапе ничего не мерцает
                 if(Math.abs(dx)>6||Math.abs(dy)>6){moved=true;ensureClone()}
                 if(!clone)return;
-                // FIX: двигаем через transform (GPU), а не left/top — иначе лаги от пересчёта layout
+                // Двигаем через transform (GPU), а не left/top — иначе лаги от пересчёта layout
                 clone.style.transform='translate('+dx+'px,'+dy+'px)';
                 const zone=zoneAt(t.clientX,t.clientY);if(zone!==lastZone){if(lastZone)lastZone.classList.remove('highlight');if(zone)zone.classList.add('highlight');lastZone=zone}};
             const onEnd=e=>{if(!dragging)return;dragging=false;
@@ -378,14 +371,14 @@
                 if(!t){el.style.opacity='1';return}
                 if(moved)suppressClickUntil=Date.now()+300;else{el.style.opacity='1';return}
                 const dropZone=zoneAt(t.clientX,t.clientY);
-                // FIX: при успешном совмещении НЕ восстанавливаем opacity — слово исчезает сразу,
+                // При успешном совмещении НЕ восстанавливаем opacity — слово исчезает сразу,
                 // без анимации «возврата» на исходное место
                 if(dropZone&&onDrop(el,dropZone)===true){el.style.transition='none';el.style.opacity='0';requestAnimationFrame(()=>{el.style.transition=''})}
                 else el.style.opacity='1'};
             const start=e=>{if(game.processing||el.classList.contains('matched'))return;
                 // preventDefault только для мыши (от выделения текста). Для тача не нужен:
-                // touch-action:none на .drag-word сам запрещает скролл, а preventDefault
-                // на touchstart заблокировал бы click — сломался бы режим тапов.
+                // touch-action:none сам запрещает скролл, а preventDefault на touchstart
+                // заблокировал бы click — сломался бы режим тапов.
                 if(e.type==='mousedown')e.preventDefault();
                 const t=getPoint(e);if(!t)return;
                 dragging=true;moved=false;startX=t.clientX;startY=t.clientY;rect=el.getBoundingClientRect();
@@ -414,11 +407,73 @@
         function showWin(){onWin();document.getElementById('winTitle').textContent='🎉 Победа!';document.getElementById('winText').textContent='Ты прошёл все раунды! 🔥 Streak: '+streak.count+' | 🏆 Побед: '+winsTotal;document.getElementById('winModal').classList.add('active');launchConfetti()}
         function closeWin(){document.getElementById('winModal').classList.remove('active');document.getElementById('gameScreen').style.display='none';document.getElementById('setupScreen').style.display='block';switchTab('home')}
 
-        function startTraining(){if(!photos.length){showToast('Сначала добавь фото на главной');return}training.current=0;training.items=[];const all=photos.map(p=>p.word).filter(Boolean);for(let i=0;i<training.total;i++){const ph=photos[Math.floor(Math.random()*photos.length)];const ok=Math.random()>.3;let w;if(ok||all.length<=1)w=ph.word;else{const o=all.filter(x=>x!==ph.word);w=o.length?o[Math.floor(Math.random()*o.length)]:ph.word}training.items.push({photo:ph,word:w,isCorrect:w===ph.word})}document.getElementById('trainingIntro').style.display='none';document.getElementById('trainingDone').style.display='none';document.getElementById('trainingGame').style.display='block';showTrainingItem()}
-        function showTrainingItem(){if(training.current>=training.items.length){document.getElementById('trainingGame').style.display='none';document.getElementById('trainingDone').style.display='block';return}const it=training.items[training.current];document.getElementById('trainingProgress').textContent=(training.current+1)+' / '+training.total;document.getElementById('trainingImg').src=it.photo.dataUrl;document.getElementById('trainingWord').textContent=it.word}
-        function trainingAnswer(ans){const it=training.items[training.current];const ok=(ans&&it.isCorrect)||(!ans&&!it.isCorrect);if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred(ok?'success':'error');training.current++;showTrainingItem()}
-
         function launchConfetti(){const colors=['#2481cc','#e74c3c','#2ecc71','#f1c40f','#9b59b6','#e67e22','#1abc9c'];for(let i=0;i<60;i++){const e=document.createElement('div');e.className='confetti';e.style.left=Math.random()*100+'vw';e.style.background=colors[Math.floor(Math.random()*colors.length)];e.style.animationDuration=(2+Math.random()*2)+'s';e.style.animationDelay=Math.random()*.8+'s';e.style.width=(6+Math.random()*6)+'px';e.style.height=(6+Math.random()*6)+'px';document.body.appendChild(e);setTimeout(()=>e.remove(),4000)}}
+
+        // ===== Самооценка (вкладка «Прогресс») =====
+        function getSelfWords(){const seen=[];photos.forEach(p=>{const w=p.word;if(w&&!seen.includes(w))seen.push(w)});return seen}
+        function dayAvg(d){const o=selfRatings[d];if(!o)return null;const vals=Object.values(o).filter(v=>v>0);if(!vals.length)return null;return vals.reduce((a,b)=>a+b,0)/vals.length}
+        function prevRatingFor(word){const today=getToday();const dates=Object.keys(selfRatings).filter(d=>d<today).sort();for(let i=dates.length-1;i>=0;i--){const v=selfRatings[dates[i]][word];if(v)return v}return null}
+        function renderSelfTab(){
+            const words=getSelfWords(),today=getToday(),todayData=selfRatings[today]||{};
+            const sum=document.getElementById('selfSummary'),hist=document.getElementById('selfHistory'),list=document.getElementById('selfList');
+            if(!words.length){sum.innerHTML='';hist.innerHTML='';list.innerHTML='<div class="self-empty">Сначала добавь фото и слова на вкладке «Главная» —<br>здесь появятся твои качества для самооценки.</div>';return}
+            // Сводка
+            const tAvg=dayAvg(today);
+            const prevDates=Object.keys(selfRatings).filter(d=>d<today&&dayAvg(d)!=null).sort();
+            const pAvg=prevDates.length?dayAvg(prevDates[prevDates.length-1]):null;
+            let sumHtml='<div class="self-summary-title">Как ты сегодня себя ощущаешь?</div><div class="self-summary-sub">Оцени соответствие каждому слову от 1 до 10</div>';
+            if(tAvg!=null)sumHtml+='<div class="self-avg">Сегодня: <b>'+tAvg.toFixed(1)+'</b>'+(pAvg!=null?' <span class="'+(tAvg>=pAvg?'up':'down')+'">'+(tAvg>=pAvg?'▲':'▼')+' (было '+pAvg.toFixed(1)+')</span>':'')+'</div>';
+            sum.innerHTML=sumHtml;
+            // История за 7 дней
+            const days=[];for(let i=6;i>=0;i--)days.push(new Date(Date.now()-i*864e5).toISOString().split('T')[0]);
+            hist.innerHTML='<div class="self-hist-title">Средняя самооценка по дням</div><div class="self-hist-row">'+days.map(d=>{const a=dayAvg(d);const h=a!=null?Math.max(4,Math.round(a*10)):0;return '<div class="self-hist-col"><div class="self-hist-bar-wrap"><div class="self-hist-bar'+(d===today?' today':'')+'" style="height:'+h+'%"></div></div><div class="self-hist-day">'+d.slice(8)+'.'+d.slice(5,7)+'</div></div>'}).join('')+'</div>';
+            // Список слов со слайдерами
+            list.innerHTML='';
+            words.forEach((w,i)=>{
+                const val=todayData[w]||0,prev=prevRatingFor(w);
+                const card=document.createElement('div');card.className='self-card';
+                card.innerHTML='<div class="self-head"><span class="self-word">'+esc(w)+'</span><span class="self-val" id="selfVal'+i+'">'+(val||'—')+'</span></div>'+
+                    '<input type="range" min="1" max="10" step="1" value="'+(val||5)+'" class="self-slider" id="selfSlider'+i+'">'+
+                    '<div class="self-scale"><span>1</span><span>5</span><span>10</span></div>'+
+                    (prev!=null?'<div class="self-prev">прошлая оценка: '+prev+'</div>':'');
+                list.appendChild(card);
+                const slider=document.getElementById('selfSlider'+i),bubble=document.getElementById('selfVal'+i);
+                slider.addEventListener('input',()=>{bubble.textContent=slider.value});
+                slider.addEventListener('change',()=>{
+                    if(!selfRatings[today])selfRatings[today]={};
+                    selfRatings[today][w]=+slider.value;
+                    if(selfSaveTimer)clearTimeout(selfSaveTimer);
+                    selfSaveTimer=setTimeout(async()=>{await saveMeta('selfRatings',selfRatings);showSaved();renderSelfTab()},400);
+                });
+            });
+        }
+
+        // ===== Перенос данных между устройствами (без сервера) =====
+        function exportData(){
+            if(!photos.length&&!winsTotal&&!streak.count){showToast('Пока нечего экспортировать');return}
+            const data={app:'associations',version:1,exportedAt:new Date().toISOString(),photos:photos,streak:streak,winsTotal:winsTotal,selfRatings:selfRatings};
+            const blob=new Blob([JSON.stringify(data)],{type:'application/json'});
+            const url=URL.createObjectURL(blob);
+            const a=document.createElement('a');a.href=url;a.download='associations-backup-'+getToday()+'.json';
+            document.body.appendChild(a);a.click();a.remove();
+            setTimeout(()=>URL.revokeObjectURL(url),5000);
+            showToast('📤 Файл сохранён — отправь его себе в «Избранное» в Telegram')
+        }
+        async function importData(input){
+            const file=input.files[0];input.value='';if(!file)return;
+            try{
+                const data=JSON.parse(await file.text());
+                if(!data||data.app!=='associations'||!Array.isArray(data.photos))throw new Error('bad file');
+                if(!confirm('Импортировать '+data.photos.length+' фото и статистику?\nТекущие данные на этом устройстве будут заменены.'))return;
+                photos=data.photos.filter(p=>p&&p.dataUrl).map(p=>({id:p.id||Date.now()+Math.random(),dataUrl:p.dataUrl,word:String(p.word||''),prefix:String(p.prefix||'Я'),favorite:!!p.favorite}));
+                if(data.streak&&typeof data.streak==='object')streak={count:data.streak.count|0,lastWinDate:data.streak.lastWinDate||null};
+                if(typeof data.winsTotal==='number')winsTotal=data.winsTotal;
+                if(data.selfRatings&&typeof data.selfRatings==='object')selfRatings=data.selfRatings;
+                await savePhotos();await saveMeta('streak',streak);await saveMeta('winsTotal',winsTotal);await saveMeta('selfRatings',selfRatings);
+                checkStreak();renderStats();renderPhotos();
+                showToast('✅ Импортировано: '+photos.length+' фото')
+            }catch(e){showToast('❌ Не удалось прочитать файл бэкапа')}
+        }
 
         init();
     </script>
