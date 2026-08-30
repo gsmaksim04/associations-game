@@ -169,7 +169,7 @@
                 </div>
                 <h1>🧠 Ассоциации</h1>
                 <p>Загрузи фото и придумай к ним слова</p>
-                <div class="version">v0.7</div>
+                <div class="version">v0.7.1</div>
                 <div class="saved-badge" id="savedBadge">✅ Сохранено</div>
                 <div class="counter" id="counter">Добавлено: 0/4</div>
             </div>
@@ -342,12 +342,15 @@
 
         // Общая проверка совпадения «слово → фото» — используется и для drag-and-drop, и для режима тапов
         function attemptMatch(dropZone,el){const correctWord=dropZone.dataset.word;const draggedWord=el.dataset.word;
-            if(correctWord===draggedWord){dropZone.classList.add('correct');el.classList.add('matched');el.classList.remove('selected');if(dragSelected===el)dragSelected=null;game.dragMatched++;if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');if(game.dragMatched>=game.dragTotal){clearInterval(game.timer);setTimeout(()=>{game.current++;startRound()},600)}}
-            else{dropZone.classList.add('wrong');if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');setTimeout(()=>dropZone.classList.remove('wrong'),400)}}
+            if(correctWord===draggedWord){dropZone.classList.add('correct');el.classList.add('matched');el.classList.remove('selected');if(dragSelected===el)dragSelected=null;game.dragMatched++;if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');if(game.dragMatched>=game.dragTotal){clearInterval(game.timer);setTimeout(()=>{game.current++;startRound()},600)}return true}
+            dropZone.classList.add('wrong');if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');setTimeout(()=>dropZone.classList.remove('wrong'),400);return false}
 
         // Универсальное перетаскивание: opts.zoneSelector — что считать целью,
-        // opts.tapSelect — включать ли режим тапов (выбор слова), opts.onDrop — что делать при дропе
-        function makeDraggable(el,opts){opts=opts||{};const zoneSelector=opts.zoneSelector||'.drag-target';const tapSelect=opts.tapSelect!==false;const onDrop=opts.onDrop||attemptMatch;
+        // opts.tapSelect — включать ли режим тапов (выбор слова), opts.onDrop — что делать при дропе.
+        // Конвенция: onDrop вызывается как onDrop(draggedElement, dropZone) и возвращает true при успехе.
+        // FIX v0.7.1: раньше дефолтом был сам attemptMatch — из-за другого порядка аргументов
+        // классы correct/matched вешались НАОБОРОТ (на слово и фото соответственно).
+        function makeDraggable(el,opts){opts=opts||{};const zoneSelector=opts.zoneSelector||'.drag-target';const tapSelect=opts.tapSelect!==false;const onDrop=opts.onDrop||((draggedEl,zone)=>attemptMatch(zone,draggedEl));
             let startX,startY,dragging=false,moved=false,clone=null,lastZone=null;
             // FIX: в touchend список e.touches УЖЕ ПУСТОЙ, но сам объект существует (truthy) —
             // нельзя писать e.touches?e.touches[0]:..., иначе берётся undefined и обработчик падает.
@@ -369,12 +372,16 @@
                 const zone=zoneAt(t.clientX,t.clientY);if(zone!==lastZone){if(lastZone)lastZone.classList.remove('highlight');if(zone)zone.classList.add('highlight');lastZone=zone}};
             const onEnd=e=>{if(!dragging)return;dragging=false;
                 document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onEnd);
-                el.style.opacity='1';if(clone){clone.remove();clone=null}
                 if(lastZone){lastZone.classList.remove('highlight');lastZone=null}
-                const t=getPoint(e);if(!t)return;
-                if(moved)suppressClickUntil=Date.now()+300;else return;
-                const dropZone=zoneAt(t.clientX,t.clientY);if(!dropZone)return;
-                onDrop(el,dropZone)};
+                if(clone){clone.remove();clone=null}
+                const t=getPoint(e);
+                if(!t){el.style.opacity='1';return}
+                if(moved)suppressClickUntil=Date.now()+300;else{el.style.opacity='1';return}
+                const dropZone=zoneAt(t.clientX,t.clientY);
+                // FIX: при успешном совмещении НЕ восстанавливаем opacity — слово исчезает сразу,
+                // без анимации «возврата» на исходное место
+                if(dropZone&&onDrop(el,dropZone)===true){el.style.transition='none';el.style.opacity='0';requestAnimationFrame(()=>{el.style.transition=''})}
+                else el.style.opacity='1'};
             const start=e=>{if(game.processing||el.classList.contains('matched'))return;
                 // preventDefault только для мыши (от выделения текста). Для тача не нужен:
                 // touch-action:none на .drag-word сам запрещает скролл, а preventDefault
@@ -400,7 +407,7 @@
 
         function handleTimeout(){if(game.processing)return;game.processing=true;document.getElementById('hint').textContent='⏰ Время вышло! Раунд повторится позже';document.getElementById('hint').style.color='var(--error)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');scheduleRetry();setTimeout(()=>{game.current++;startRound()},1200)}
 
-        function checkWord(word,btn){if(game.processing)return;clearInterval(game.timer);game.processing=true;const r=game.rounds[game.current];const ok=word===r.target.word;document.querySelectorAll('.word-btn').forEach(b=>b.disabled=true);if(ok){btn.classList.add('correct');document.getElementById('hint').textContent='✅ '+(r.target.prefix||'Я')+' '+word+'!';document.getElementById('hint').style.color='var(--success)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');setTimeout(()=>{game.current++;startRound()},900)}else{btn.classList.add('wrong');document.getElementById('hint').textContent='❌ Неправильно. Раунд повторится позже';document.getElementById('hint').style.color='var(--error)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');scheduleRetry();setTimeout(()=>{game.current++;startRound()},1200)}}
+        function checkWord(word,btn){if(game.processing)return false;clearInterval(game.timer);game.processing=true;const r=game.rounds[game.current];const ok=word===r.target.word;document.querySelectorAll('.word-btn').forEach(b=>b.disabled=true);if(ok){btn.classList.add('correct');document.getElementById('hint').textContent='✅ '+(r.target.prefix||'Я')+' '+word+'!';document.getElementById('hint').style.color='var(--success)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('success');setTimeout(()=>{game.current++;startRound()},900);return true}btn.classList.add('wrong');document.getElementById('hint').textContent='❌ Неправильно. Раунд повторится позже';document.getElementById('hint').style.color='var(--error)';if(tg.HapticFeedback)tg.HapticFeedback.notificationOccurred('error');scheduleRetry();setTimeout(()=>{game.current++;startRound()},1200);return false}
 
         function scheduleRetry(){const r=game.rounds[game.current];const pos=Math.min(game.current+2,game.rounds.length);if(!r.isRetry)game.rounds.splice(pos,0,{...r,isRetry:true})}
 
